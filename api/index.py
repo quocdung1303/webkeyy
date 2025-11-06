@@ -12,16 +12,6 @@ app = Flask(__name__)
 LINK4M_API = "https://link4m.co/api-shorten/v2"
 LINK4M_KEY = os.getenv("LINK4M_KEY")
 
-def get_base_url():
-    base_url = os.getenv("BASE_URL", "")
-    if base_url:
-        return base_url if base_url.startswith("http") else f"https://{base_url}"
-    
-    if request:
-        return request.url_root.rstrip('/')
-    
-    return ""
-
 KEY_FILE = "/tmp/key.json"
 
 def generate_key(length=24):
@@ -51,7 +41,7 @@ def save_data(data):
         json.dump(data, f, indent=2)
 
 def cleanup_old_sessions():
-    """Xóa session cũ hơn 24 giờ"""
+    """Xóa session cũ hơn 24 giờ - TỰ ĐỘNG"""
     data = load_data()
     current_time = time.time()
     sessions_to_delete = []
@@ -65,6 +55,13 @@ def cleanup_old_sessions():
     
     if sessions_to_delete:
         save_data(data)
+        print(f"[CLEANUP] Đã xóa {len(sessions_to_delete)} session hết hạn")
+
+# ✅ TỰ ĐỘNG CLEANUP MỖI KHI CÓ REQUEST
+@app.before_request
+def auto_cleanup():
+    """Tự động cleanup trước mỗi request"""
+    cleanup_old_sessions()
 
 @app.route("/")
 def home():
@@ -78,8 +75,6 @@ def home():
 @app.route("/api/get_link")
 def get_link():
     """Tạo link rút gọn Link4m"""
-    cleanup_old_sessions()
-    
     if not LINK4M_KEY:
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
@@ -105,7 +100,7 @@ def get_link():
         data["sessions"][session_token] = {
             "unique_key": unique_key,
             "created_at": time.time(),
-            "link_clicked": False,  # Chưa vượt link
+            "link_clicked": False,
             "ip_address": request.remote_addr
         }
         save_data(data)
@@ -136,6 +131,13 @@ def get_key():
     created_at = session.get("created_at", 0)
     current_time = time.time()
     
+    # ✅ KIỂM TRA HẾT HẠN
+    if current_time - created_at > 86400:
+        # Xóa session hết hạn ngay
+        del data["sessions"][session_token]
+        save_data(data)
+        return jsonify({"status": "error", "msg": "Session đã hết hạn (quá 24 giờ)"})
+    
     # KIỂM TRA: Phải đợi ít nhất 15 giây
     time_elapsed = current_time - created_at
     if time_elapsed < 15:
@@ -147,7 +149,7 @@ def get_key():
     
     # Đủ thời gian → Cho phép lấy key
     unique_key = session.get("unique_key")
-    expire_time = created_at + 86400  # 24 giờ
+    expire_time = created_at + 86400
     
     if not unique_key:
         return jsonify({"status": "error", "msg": "Key không tồn tại"})
@@ -178,9 +180,12 @@ def check_key():
     # Tìm key trong tất cả sessions
     for session_token, session_data in data.get("sessions", {}).items():
         if session_data.get("unique_key") == key:
-            # Kiểm tra key còn hạn không (24 giờ)
+            # ✅ KIỂM TRA HẾT HẠN
             created_at = session_data.get("created_at", 0)
             if current_time - created_at > 86400:
+                # Xóa key hết hạn ngay
+                del data["sessions"][session_token]
+                save_data(data)
                 return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
             
             # Key hợp lệ
