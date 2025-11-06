@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify, send_from_directory
-import requests
+from flask import Flask, request, jsonify
 import json
 import os
 import time
 import random
 import string
 import secrets
+import requests
 
 app = Flask(__name__)
 
@@ -25,14 +25,17 @@ def get_base_url():
 KEY_FILE = "/tmp/key.json"
 
 def generate_key(length=24):
+    """Tạo key ngẫu nhiên"""
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 def generate_session_token():
+    """Tạo session token"""
     return secrets.token_urlsafe(32)
 
 def load_data():
+    """Load dữ liệu từ file"""
     if not os.path.exists(KEY_FILE):
-        return {"date": "", "key": "", "sessions": {}}
+        return {"sessions": {}}
     try:
         with open(KEY_FILE, "r") as f:
             data = json.load(f)
@@ -40,34 +43,22 @@ def load_data():
                 data["sessions"] = {}
             return data
     except:
-        return {"date": "", "key": "", "sessions": {}}
+        return {"sessions": {}}
 
 def save_data(data):
+    """Lưu dữ liệu vào file"""
     with open(KEY_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-def new_daily_key():
-    today = time.strftime("%Y-%m-%d")
-    data = load_data()
-    
-    if data.get("date") != today:
-        key = generate_key()
-        data = {
-            "date": today,
-            "key": key,
-            "sessions": {}
-        }
-        save_data(data)
-    
-    return data
-
 def cleanup_old_sessions():
+    """Xóa session cũ hơn 24 giờ"""
     data = load_data()
     current_time = time.time()
     sessions_to_delete = []
     
     for session_token, session_data in data.get("sessions", {}).items():
-        if current_time - session_data.get("created_at", 0) > 3600:
+        # Xóa session cũ hơn 24 giờ
+        if current_time - session_data.get("created_at", 0) > 86400:  # 24 giờ
             sessions_to_delete.append(session_token)
     
     for token in sessions_to_delete:
@@ -78,6 +69,7 @@ def cleanup_old_sessions():
 
 @app.route("/")
 def home():
+    """Trang chủ"""
     try:
         with open('folder/index.html', 'r', encoding='utf-8') as f:
             return f.read()
@@ -86,14 +78,16 @@ def home():
 
 @app.route("/api/get_link")
 def get_link():
+    """Tạo link rút gọn - MỖI SESSION MỘT KEY RIÊNG"""
     cleanup_old_sessions()
-    data = new_daily_key()
     
     if not LINK4M_KEY:
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
+    # Tạo session token và key riêng cho user này
     session_token = generate_session_token()
     verify_secret = generate_session_token()
+    unique_key = generate_key()  # KEY RIÊNG cho session này
     
     base_url = get_base_url()
     if not base_url:
@@ -102,6 +96,7 @@ def get_link():
     destination = f"{base_url}/api/verify?token={session_token}&secret={verify_secret}"
     
     try:
+        # Tạo link rút gọn
         create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination}"
         res = requests.get(create_url, timeout=10).json()
         
@@ -110,16 +105,20 @@ def get_link():
         
         short_url = res["shortenedUrl"]
         
+        # Lưu session với KEY RIÊNG
+        data = load_data()
         data["sessions"][session_token] = {
             "verified": False,
             "verify_secret": verify_secret,
-            "created_at": time.time()
+            "created_at": time.time(),
+            "unique_key": unique_key,  # KEY RIÊNG - QUAN TRỌNG!
+            "ip_address": request.remote_addr  # Track IP (optional)
         }
         save_data(data)
         
         return jsonify({
             "status": "ok",
-            "message": "Vui lòng vượt link để lấy key",
+            "message": "Vui lòng vượt link để lấy key RIÊNG của bạn",
             "url": short_url,
             "token": session_token
         })
@@ -128,6 +127,7 @@ def get_link():
 
 @app.route("/api/verify")
 def verify():
+    """Xác thực sau khi vượt link"""
     session_token = request.args.get("token")
     verify_secret = request.args.get("secret")
     
@@ -137,14 +137,16 @@ def verify():
     data = load_data()
     
     if session_token not in data.get("sessions", {}):
-        return "❌ Session không tồn tại"
+        return "❌ Session không tồn tại hoặc đã hết hạn"
     
     session = data["sessions"][session_token]
     
     if session.get("verify_secret") != verify_secret:
         return "❌ Secret không hợp lệ"
     
+    # Đánh dấu đã verify
     data["sessions"][session_token]["verified"] = True
+    data["sessions"][session_token]["verified_at"] = time.time()
     save_data(data)
     
     return """
@@ -183,7 +185,7 @@ def verify():
                 100% { transform: scale(1); }
             }
             h1 { color: #333; margin: 20px 0; }
-            p { color: #666; font-size: 16px; }
+            p { color: #666; font-size: 16px; line-height: 1.6; }
             .btn {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
@@ -196,13 +198,26 @@ def verify():
                 text-decoration: none;
                 display: inline-block;
             }
+            .warning {
+                background: #fff3cd;
+                color: #856404;
+                padding: 15px;
+                border-radius: 10px;
+                margin: 15px 0;
+                font-size: 14px;
+            }
         </style>
     </head>
     <body>
         <div class="success-box">
             <div class="checkmark">✅</div>
             <h1>Xác thực thành công!</h1>
-            <p>Bạn đã vượt link thành công. Vui lòng quay lại trang chủ để lấy key.</p>
+            <p>Bạn đã vượt link thành công.</p>
+            <div class="warning">
+                <strong>⚠️ LƯU Ý:</strong><br>
+                Hãy ĐÓNG TAB NÀY và quay lại trang chủ để nhấn "Lấy Key".<br>
+                Key của bạn là RIÊNG, không chia sẻ cho người khác!
+            </div>
             <a href="/" class="btn">Quay lại trang chủ</a>
         </div>
     </body>
@@ -211,6 +226,7 @@ def verify():
 
 @app.route("/api/get_key")
 def get_key():
+    """Lấy KEY RIÊNG sau khi đã verify"""
     session_token = request.args.get("token")
     
     if not session_token:
@@ -219,27 +235,62 @@ def get_key():
     data = load_data()
     
     if session_token not in data.get("sessions", {}):
-        return jsonify({"status": "error", "msg": "Session không tồn tại"})
+        return jsonify({"status": "error", "msg": "Session không tồn tại hoặc đã hết hạn"})
     
-    if not data["sessions"][session_token].get("verified"):
-        return jsonify({"status": "error", "msg": "Bạn chưa vượt link"})
+    session = data["sessions"][session_token]
+    
+    if not session.get("verified"):
+        return jsonify({"status": "error", "msg": "Bạn chưa vượt link. Vui lòng vượt link trước!"})
+    
+    # Trả về KEY RIÊNG của session này
+    unique_key = session.get("unique_key")
+    created_at = session.get("created_at", time.time())
+    
+    if not unique_key:
+        return jsonify({"status": "error", "msg": "Key không tồn tại"})
+    
+    # Tính thời gian hết hạn
+    expire_time = created_at + 86400  # 24 giờ
     
     return jsonify({
         "status": "ok",
-        "key": data["key"],
-        "date": data["date"]
+        "key": unique_key,
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at)),
+        "expire_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time)),
+        "is_unique": True  # Đánh dấu là key riêng
     })
 
 @app.route("/api/check_key")
 def check_key():
+    """Kiểm tra key có hợp lệ không - CHỈ KEY RIÊNG MỚI HỢP LỆ"""
     key = request.args.get("key")
     
     if not key:
         return jsonify({"status": "fail", "msg": "Thiếu key"})
     
     data = load_data()
+    current_time = time.time()
     
-    if key == data.get("key"):
-        return jsonify({"status": "ok", "msg": "Key hợp lệ", "date": data["date"]})
+    # Tìm key trong tất cả sessions
+    for session_token, session_data in data.get("sessions", {}).items():
+        if session_data.get("unique_key") == key:
+            # Kiểm tra key đã verify chưa
+            if not session_data.get("verified"):
+                return jsonify({"status": "fail", "msg": "Key chưa được xác thực"})
+            
+            # Kiểm tra key còn hạn không (24 giờ)
+            created_at = session_data.get("created_at", 0)
+            if current_time - created_at > 86400:
+                return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
+            
+            # Key hợp lệ
+            expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
+            return jsonify({
+                "status": "ok",
+                "msg": "Key hợp lệ",
+                "expire_at": expire_at,
+                "is_unique": True
+            })
     
-    return jsonify({"status": "fail", "msg": "Key không hợp lệ"})
+    # Không tìm thấy key
+    return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
