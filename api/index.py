@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 # ==================== CẤU HÌNH ====================
 SESSIONS_FILE = "/tmp/sessions.json"
-LINK4M_KEY = os.environ.get("LINK4M_KEY", "your_link4m_key_here")
+LINK4M_KEY = os.environ.get("LINK4M_KEY", "")
 
 # Rate limiting storage (in-memory)
 rate_limit_storage = defaultdict(lambda: deque(maxlen=100))
@@ -94,14 +94,24 @@ def get_client_ip():
 @app.route("/")
 def index():
     """Trang chủ lấy key"""
-    return render_template_string(INDEX_HTML)
+    try:
+        with open('folder/index.html', 'r', encoding='utf-8') as f:
+            return f.read()
+    except:
+        return "Error loading page", 500
 
-@app.route("/api/get_link")
 @app.route("/api/get_link")
 def get_link():
     """Tạo link rút gọn Link4m"""
     try:
         import requests
+        
+        if not LINK4M_KEY:
+            print("[ERROR] LINK4M_KEY chưa được set!")
+            return jsonify({
+                "status": "error",
+                "msg": "Hệ thống chưa được cấu hình. Vui lòng liên hệ admin."
+            }), 500
         
         # Gọi API Link4m
         api_url = f"https://link4m.co/api?api={LINK4M_KEY}&url=https://webkeyy.vercel.app/success"
@@ -132,12 +142,6 @@ def get_link():
                 "msg": f"Link4m API lỗi (HTTP {response.status_code})"
             }), 500
             
-    except requests.Timeout:
-        print("[ERROR] Timeout khi gọi Link4m")
-        return jsonify({
-            "status": "error",
-            "msg": "Link4m không phản hồi. Vui lòng thử lại."
-        }), 500
     except Exception as e:
         print(f"[ERROR] get_link: {e}")
         return jsonify({
@@ -245,7 +249,7 @@ def check_key():
             print(f"[IP_LIMIT] Key {key[:8]}... đã đủ {max_ips} IP | Current: {user_ip}")
             return jsonify({
                 "status": "error",
-                "msg": f"Key đang được sử dụng trên {max_ips} thiết bị khác. Không được chia sẻ key!"
+                "msg": f"Key đang được sử dụng trên thiết bị khác. Vui lòng chờ 24h để lấy key mới."
             }), 403
         else:
             # Thêm IP mới
@@ -281,115 +285,6 @@ def huong_dan():
     return render_template_string(HUONG_DAN_HTML)
 
 # ==================== HTML TEMPLATES ====================
-
-INDEX_HTML = """
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARES Key System</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 500px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(0, 255, 157, 0.3);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(0, 255, 157, 0.2);
-        }
-        .logo {
-            font-size: 64px;
-            font-weight: bold;
-            color: #00ff9d;
-            text-shadow: 0 0 30px rgba(0, 255, 157, 0.5);
-            letter-spacing: 8px;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            font-size: 18px;
-            color: #ffc107;
-            margin-bottom: 30px;
-        }
-        .get-key-btn {
-            background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
-            color: #0a0e27;
-            border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
-        }
-        .get-key-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.5);
-        }
-        .info-box {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            text-align: left;
-        }
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            color: rgba(255, 255, 255, 0.9);
-        }
-        .link {
-            color: #00ff9d;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .link:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">ARES</div>
-        <div class="subtitle">LICENSE KEY SYSTEM V2.0</div>
-        
-        <button class="get-key-btn" onclick="getKey()">Lấy Key Ngay</button>
-        
-        <div class="info-box">
-            <div class="info-item">⏰ Key có hiệu lực 24 giờ</div>
-            <div class="info-item">🔒 Chỉ hoạt động trên thiết bị của bạn (max 3 IP)</div>
-            <div class="info-item">🎁 Hoàn toàn miễn phí</div>
-            <div class="info-item">
-                📖 <a href="/huong-dan" class="link">Xem hướng dẫn cài đặt tool →</a>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function getKey() {
-            window.location.href = "https://link4m.co/api?api=" + "YOUR_LINK4M_KEY" + "&url=https://webkeyy.vercel.app/success&format=text";
-        }
-    </script>
-</body>
-</html>
-"""
 
 SUCCESS_HTML = """
 <!DOCTYPE html>
@@ -485,8 +380,8 @@ SUCCESS_HTML = """
         
         <div class="note">
             <div class="note-item">✅ Key có hiệu lực 24 giờ</div>
-            <div class="note-item">✅ Cho phép đổi IP tối đa 3 lần (4G OK)</div>
-            <div class="note-item">❌ Không chia sẻ key cho người khác</div>
+            <div class="note-item">✅ Hỗ trợ đổi mạng 4G/Wifi bình thường</div>
+            <div class="note-item">✅ Key hoạt động tốt nhất khi dùng trên 1 thiết bị</div>
             <div class="note-item">🔄 Lấy key mới sau 24 giờ</div>
         </div>
     </div>
@@ -715,12 +610,7 @@ HUONG_DAN_HTML = """
             </div>
             <div class="info-item">⏱️ Chờ cài đặt thư viện (requests, colorama, websocket-client)</div>
         </div>
-
-        <!-- BƯỚC 4 -->
-        <div class="section">
-            <h2><span class="step-number">4</span> Lấy License Key</h2>
-            
-            <div class="info-box">
+                    <div class="info-box">
                 <h3>🔑 Cách Lấy Key:</h3>
                 <div class="info-item">1️⃣ Vào trang chủ: <a href="/" class="link">webkeyy.vercel.app</a></div>
                 <div class="info-item">2️⃣ Click nút "Lấy Key Ngay"</div>
@@ -835,3 +725,11 @@ HUONG_DAN_HTML = """
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+        <!-- BƯỚC 4 -->
+        <div class="section">
+            <h2><span class="step-number">4</span> Lấy License Key</h2>
+            
+            <div class="info-box">
+                <h3>🔑 Cách Lấy Key:</h3>
+                <div class="info-item">1️⃣ Vào trang chủ: <a href="/" class="link"
