@@ -6,6 +6,7 @@ import random
 import string
 import secrets
 import requests
+from collections import defaultdict, deque
 
 app = Flask(__name__)
 
@@ -14,6 +15,9 @@ LINK4M_KEY = os.getenv("LINK4M_KEY")
 
 KEY_FILE = "/tmp/key.json"
 
+# Rate limiting storage (in-memory)
+rate_limit_storage = defaultdict(lambda: deque(maxlen=100))
+
 def generate_key(length=24):
     """Tạo key ngẫu nhiên"""
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
@@ -21,6 +25,20 @@ def generate_key(length=24):
 def generate_session_token():
     """Tạo session token"""
     return secrets.token_urlsafe(32)
+
+def check_rate_limit(identifier, max_requests=10, time_window=60):
+    """Check rate limit cho một identifier (key hoặc IP)"""
+    current_time = time.time()
+    request_times = rate_limit_storage[identifier]
+    
+    while request_times and current_time - request_times[0] > time_window:
+        request_times.popleft()
+    
+    if len(request_times) >= max_requests:
+        return False, len(request_times)
+    
+    request_times.append(current_time)
+    return True, len(request_times)
 
 def load_data():
     """Load dữ liệu từ file"""
@@ -55,6 +73,7 @@ def cleanup_old_sessions():
     
     if sessions_to_delete:
         save_data(data)
+        print(f"[CLEANUP] Đã xóa {len(sessions_to_delete)} sessions hết hạn")
 
 @app.before_request
 def auto_cleanup():
@@ -64,11 +83,7 @@ def auto_cleanup():
 @app.route("/")
 def home():
     """Trang chủ"""
-    try:
-        with open('folder/index.html', 'r', encoding='utf-8') as f:
-            return f.read()
-    except:
-        return "index.html not found"
+    return render_template_string(INDEX_HTML)
 
 @app.route("/api/get_link")
 def get_link():
@@ -95,13 +110,18 @@ def get_link():
         # Lưu session NHƯNG CHƯA TẠO KEY
         data = load_data()
         data["sessions"][session_token] = {
-            "unique_key": None,  # Chưa có key
+            "unique_key": None,
             "created_at": time.time(),
-            "verified": False,  # Chưa vượt link
+            "verified": False,
             "owner_ip": user_ip,
+            "ip_list": [user_ip],  # ← THÊM: List IP tracking
+            "max_ips": 3,          # ← THÊM: Tối đa 3 IP
+            "check_count": 0,      # ← THÊM: Đếm số lần check
             "owner_user_agent": user_agent
         }
         save_data(data)
+        
+        print(f"[GET_LINK] Token: {session_token[:8]}... | IP: {user_ip}")
         
         return jsonify({
             "status": "ok",
@@ -110,6 +130,7 @@ def get_link():
             "token": session_token
         })
     except Exception as e:
+        print(f"[ERROR] get_link: {e}")
         return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})
 
 @app.route("/success")
@@ -137,19 +158,29 @@ def success_page():
     
     # Lấy IP hiện tại
     current_ip = request.remote_addr
-    owner_ip = session.get("owner_ip")
     
-    # Kiểm tra IP - CHẶN SHARE KEY
-    if owner_ip and current_ip != owner_ip:
-        return render_template_string(ERROR_PAGE, 
-            error_msg="Key này không phải của bạn! Vui lòng vào https://webkeyy.vercel.app để lấy key riêng.")
+    # ===== THÊM: IP TRACKING (Max 3 IPs) =====
+    ip_list = session.get("ip_list", [session.get("owner_ip")])
+    max_ips = session.get("max_ips", 3)
+    
+    if current_ip not in ip_list:
+        if len(ip_list) >= max_ips:
+            return render_template_string(ERROR_PAGE, 
+                error_msg=f"Key này đang được sử dụng trên {max_ips} thiết bị khác. Không được chia sẻ key! Vui lòng lấy key mới tại https://webkeyy.vercel.app")
+        else:
+            ip_list.append(current_ip)
+            session["ip_list"] = ip_list
+            print(f"[IP_ADD] Token: {session_token[:8]}... | Thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
     
     # TẠO KEY NẾU CHƯA CÓ (lần đầu vào trang success)
     if not session.get("unique_key"):
         session["unique_key"] = generate_key()
         session["verified"] = True
-        data["sessions"][session_token] = session
-        save_data(data)
+        print(f"[SUCCESS] Tạo key mới: {session['unique_key'][:8]}... | IP: {current_ip}")
+    
+    # Lưu session
+    data["sessions"][session_token] = session
+    save_data(data)
     
     unique_key = session["unique_key"]
     expire_time = created_at + 86400
@@ -157,17 +188,32 @@ def success_page():
     
     return render_template_string(SUCCESS_PAGE, 
         key=unique_key, 
-        expire_at=expire_str)
+        expire_at=expire_str,
+        ips_used=len(ip_list),
+        max_ips=max_ips)
 
 @app.route("/api/check_key")
 def check_key():
-    """Kiểm tra key có hợp lệ không - CHẶN SHARE KEY"""
+    """Kiểm tra key có hợp lệ không - VỚI IP TRACKING & RATE LIMITING"""
     key = request.args.get("key")
     
     if not key:
         return jsonify({"status": "fail", "msg": "Thiếu key"})
     
     current_ip = request.remote_addr
+    
+    # ===== THÊM: RATE LIMITING - IP Level =====
+    ip_allowed, ip_count = check_rate_limit(f"ip:{current_ip}", max_requests=20, time_window=60)
+    if not ip_allowed:
+        print(f"[RATE_LIMIT] IP {current_ip} vượt quá 20 req/phút")
+        return jsonify({"status": "fail", "msg": "Quá nhiều requests từ IP của bạn. Vui lòng chờ 1 phút."})
+    
+    # ===== THÊM: RATE LIMITING - Key Level =====
+    key_allowed, key_count = check_rate_limit(f"key:{key}", max_requests=10, time_window=60)
+    if not key_allowed:
+        print(f"[RATE_LIMIT] Key {key[:8]}... vượt quá 10 req/phút")
+        return jsonify({"status": "fail", "msg": "Key đang được check quá nhiều lần. Vui lòng chờ."})
+    
     data = load_data()
     current_time = time.time()
     
@@ -181,26 +227,320 @@ def check_key():
                 save_data(data)
                 return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
             
-            # Kiểm tra IP
-            owner_ip = session_data.get("owner_ip")
-            if owner_ip and current_ip != owner_ip:
-                return jsonify({
-                    "status": "fail",
-                    "msg": "Key này không phải của bạn! Vui lòng vào https://webkeyy.vercel.app để lấy key riêng."
-                })
+            # ===== THÊM: IP TRACKING (Max 3 IPs) =====
+            ip_list = session_data.get("ip_list", [session_data.get("owner_ip")])
+            max_ips = session_data.get("max_ips", 3)
+            
+            if current_ip not in ip_list:
+                if len(ip_list) >= max_ips:
+                    print(f"[IP_LIMIT] Key {key[:8]}... đã đủ {max_ips} IP | Current: {current_ip}")
+                    return jsonify({
+                        "status": "fail",
+                        "msg": f"Key đang được sử dụng trên thiết bị khác. Vui lòng lấy key mới tại https://webkeyy.vercel.app"
+                    })
+                else:
+                    ip_list.append(current_ip)
+                    session_data["ip_list"] = ip_list
+                    data["sessions"][session_token] = session_data
+                    save_data(data)
+                    print(f"[IP_ADD] Key {key[:8]}... thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
+            
+            # ===== THÊM: Update check count =====
+            session_data["check_count"] = session_data.get("check_count", 0) + 1
+            session_data["last_check"] = current_time
+            data["sessions"][session_token] = session_data
+            save_data(data)
             
             # Key hợp lệ
             expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
+            
+            print(f"[OK] Key {key[:8]}... | IP: {current_ip} | Checks: {session_data['check_count']} | IPs: {len(ip_list)}/{max_ips}")
+            
             return jsonify({
                 "status": "ok",
                 "msg": "Key hợp lệ",
                 "expire_at": expire_at,
-                "is_unique": True
+                "is_unique": True,
+                "ips_used": len(ip_list),
+                "max_ips": max_ips
             })
     
     return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
 
-# HTML TEMPLATE CHO TRANG SUCCESS
+@app.route("/huong-dan")
+def huong_dan():
+    """Trang hướng dẫn"""
+    return render_template_string(HUONG_DAN_HTML)
+
+# ==================== HTML TEMPLATES ====================
+
+INDEX_HTML = """
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARES Tool - Hệ Thống Quản Lý Key</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding-top: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo {
+            font-size: 64px;
+            font-weight: bold;
+            color: #00ff9d;
+            text-shadow: 0 0 30px rgba(0, 255, 157, 0.5);
+            letter-spacing: 8px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #ffc107;
+            margin-bottom: 20px;
+        }
+        .description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+        .status-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .status-item {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .status-icon { font-size: 24px; margin-bottom: 8px; }
+        .status-text { font-size: 14px; color: rgba(255, 255, 255, 0.8); }
+        .main-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #00ff9d;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 40px rgba(0, 255, 157, 0.2);
+        }
+        .card-title { font-size: 28px; color: #00ff9d; margin-bottom: 15px; text-align: center; }
+        .card-description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .get-key-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
+            color: #0a0e27;
+            border: none;
+            padding: 18px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .get-key-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 255, 157, 0.4); }
+        .get-key-btn:disabled { background: rgba(255, 255, 255, 0.2); cursor: not-allowed; transform: none; }
+        .link-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            display: none;
+        }
+        .link-box.active { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .link-title { font-size: 20px; color: #ffc107; margin-bottom: 15px; text-align: center; }
+        .link-instruction {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .link-button {
+            width: 100%;
+            background: #ffc107;
+            color: #0a0e27;
+            border: none;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+        .link-button:hover { background: #ffb300; transform: scale(1.02); }
+        .info-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+        }
+        .info-item { display: flex; align-items: flex-start; margin-bottom: 15px; }
+        .info-item:last-child { margin-bottom: 0; }
+        .info-icon { font-size: 20px; margin-right: 12px; flex-shrink: 0; }
+        .info-text { font-size: 15px; color: rgba(255, 255, 255, 0.8); line-height: 1.5; }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #0a0e27;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-msg {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #ff4444;
+            text-align: center;
+            display: none;
+        }
+        .error-msg.active { display: block; }
+        .link { color: #00ff9d; text-decoration: none; font-weight: 600; }
+        .link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">ARES</div>
+            <div class="subtitle">LICENSE KEY SYSTEM V2.0 - IP TRACKING</div>
+            <div class="description">
+                Nhận key miễn phí với hiệu lực 24 giờ để sử dụng ARES Tool
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-icon">✅</div>
+                <div class="status-text">Hệ thống hoạt động</div>
+            </div>
+            <div class="status-item">
+                <div class="status-icon">🔑</div>
+                <div class="status-text">Key 24 giờ</div>
+            </div>
+            <div class="status-item">
+                <div class="status-icon">🔒</div>
+                <div class="status-text">Bảo mật cao</div>
+            </div>
+        </div>
+
+        <div class="main-card">
+            <div class="card-title">🎁 Nhận Key Miễn Phí</div>
+            <div class="card-description">
+                Click vào nút bên dưới để nhận link. Sau khi vượt link quảng cáo, 
+                bạn sẽ tự động nhận được key riêng có hiệu lực 24 giờ.
+            </div>
+
+            <button class="get-key-btn" id="getKeyBtn" onclick="getLink()">
+                <span id="btnText">🔑 Lấy Key Ngay</span>
+            </button>
+
+            <div class="error-msg" id="errorMsg"></div>
+
+            <div class="link-box" id="linkBox">
+                <div class="link-title">🔗 Link Của Bạn</div>
+                <div class="link-instruction">
+                    Click vào nút bên dưới để vượt link quảng cáo Link4m. 
+                    <strong>Sau khi vượt xong, bạn sẽ tự động nhận được key!</strong>
+                </div>
+                <a class="link-button" id="link4mButton" href="#" target="_blank">
+                    ↗ Vượt Link Để Nhận Key
+                </a>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-item">
+                <div class="info-icon">⏰</div>
+                <div class="info-text">
+                    Key riêng cho từng người • Hiệu lực 24 giờ
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">🔒</div>
+                <div class="info-text">
+                    Key hoạt động tốt nhất khi dùng trên 1 thiết bị. Hỗ trợ đổi mạng 4G/Wifi bình thường.
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">📖</div>
+                <div class="info-text">
+                    <a href="/huong-dan" class="link">Xem hướng dẫn cài đặt tool →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function getLink() {
+            const btn = document.getElementById('getKeyBtn');
+            const btnText = document.getElementById('btnText');
+            const linkBox = document.getElementById('linkBox');
+            const link4mButton = document.getElementById('link4mButton');
+            const errorMsg = document.getElementById('errorMsg');
+
+            errorMsg.classList.remove('active');
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> Đang tạo link...';
+
+            try {
+                const response = await fetch('/api/get_link');
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    linkBox.classList.add('active');
+                    link4mButton.href = data.url;
+                    btnText.textContent = '✅ Đã tạo link thành công';
+                    linkBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    throw new Error(data.msg || 'Không thể tạo link');
+                }
+            } catch (error) {
+                errorMsg.textContent = '❌ Lỗi: ' + error.message;
+                errorMsg.classList.add('active');
+                btnText.textContent = '🔑 Lấy Key Ngay';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+"""
+
 SUCCESS_PAGE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -209,11 +549,7 @@ SUCCESS_PAGE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎉 Key Của Bạn - ARES Tool</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
@@ -224,10 +560,7 @@ SUCCESS_PAGE = """
             justify-content: center;
             padding: 20px;
         }
-        .container {
-            max-width: 600px;
-            width: 100%;
-        }
+        .container { max-width: 600px; width: 100%; }
         .success-box {
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid #00ff9d;
@@ -241,17 +574,8 @@ SUCCESS_PAGE = """
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .title {
-            font-size: 48px;
-            color: #00ff9d;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
-        }
-        .subtitle {
-            font-size: 24px;
-            color: #ffc107;
-            margin-bottom: 30px;
-        }
+        .title { font-size: 48px; color: #00ff9d; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 255, 157, 0.5); }
+        .subtitle { font-size: 24px; color: #ffc107; margin-bottom: 30px; }
         .key-container {
             background: rgba(0, 0, 0, 0.3);
             border: 2px solid #00ff9d;
@@ -259,11 +583,7 @@ SUCCESS_PAGE = """
             padding: 30px;
             margin: 30px 0;
         }
-        .key-label {
-            font-size: 18px;
-            color: #00ff9d;
-            margin-bottom: 15px;
-        }
+        .key-label { font-size: 18px; color: #00ff9d; margin-bottom: 15px; }
         .key-value {
             font-size: 22px;
             font-family: 'Courier New', monospace;
@@ -285,13 +605,8 @@ SUCCESS_PAGE = """
             cursor: pointer;
             transition: all 0.3s;
         }
-        .copy-btn:hover {
-            background: #00cc7d;
-            transform: scale(1.05);
-        }
-        .copy-btn:active {
-            transform: scale(0.95);
-        }
+        .copy-btn:hover { background: #00cc7d; transform: scale(1.05); }
+        .copy-btn:active { transform: scale(0.95); }
         .info {
             background: rgba(255, 193, 7, 0.1);
             border: 1px solid #ffc107;
@@ -299,14 +614,8 @@ SUCCESS_PAGE = """
             padding: 20px;
             margin-top: 20px;
         }
-        .info-item {
-            margin: 10px 0;
-            font-size: 16px;
-        }
-        .info-label {
-            color: #ffc107;
-            font-weight: bold;
-        }
+        .info-item { margin: 10px 0; font-size: 16px; }
+        .info-label { color: #ffc107; font-weight: bold; }
         .back-btn {
             display: inline-block;
             margin-top: 20px;
@@ -318,9 +627,7 @@ SUCCESS_PAGE = """
             text-decoration: none;
             transition: all 0.3s;
         }
-        .back-btn:hover {
-            background: rgba(0, 255, 157, 0.2);
-        }
+        .back-btn:hover { background: rgba(0, 255, 157, 0.2); }
         .toast {
             position: fixed;
             top: 20px;
@@ -360,10 +667,10 @@ SUCCESS_PAGE = """
                     <span class="info-label">⏰ Hết hạn:</span> {{ expire_at }}
                 </div>
                 <div class="info-item">
-                    <span class="info-label">⚠️ Lưu ý:</span> Key chỉ sử dụng được trên thiết bị này
+                    <span class="info-label">💡 Lưu ý:</span> Key hoạt động tốt nhất khi dùng trên 1 thiết bị
                 </div>
                 <div class="info-item">
-                    <span class="info-label">🔒 Bảo mật:</span> Không chia sẻ key cho người khác
+                    <span class="info-label">✅ Hỗ trợ:</span> Đổi mạng 4G/Wifi bình thường
                 </div>
             </div>
             
@@ -393,7 +700,6 @@ SUCCESS_PAGE = """
 </html>
 """
 
-# HTML TEMPLATE CHO TRANG LỖI
 ERROR_PAGE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -402,11 +708,7 @@ ERROR_PAGE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>❌ Lỗi - ARES Tool</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
@@ -425,20 +727,9 @@ ERROR_PAGE = """
             text-align: center;
             max-width: 500px;
         }
-        .error-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        .error-title {
-            font-size: 28px;
-            color: #ff4444;
-            margin-bottom: 20px;
-        }
-        .error-msg {
-            font-size: 18px;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
+        .error-icon { font-size: 64px; margin-bottom: 20px; }
+        .error-title { font-size: 28px; color: #ff4444; margin-bottom: 20px; }
+        .error-msg { font-size: 18px; margin-bottom: 30px; line-height: 1.6; }
         .back-btn {
             display: inline-block;
             padding: 12px 30px;
@@ -449,10 +740,7 @@ ERROR_PAGE = """
             font-weight: bold;
             transition: all 0.3s;
         }
-        .back-btn:hover {
-            background: #00cc7d;
-            transform: scale(1.05);
-        }
+        .back-btn:hover { background: #00cc7d; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -461,6 +749,102 @@ ERROR_PAGE = """
         <div class="error-title">Có Lỗi Xảy Ra</div>
         <div class="error-msg">{{ error_msg }}</div>
         <a href="/" class="back-btn">🏠 Về Trang Chủ</a>
+    </div>
+</body>
+</html>
+"""
+
+HUONG_DAN_HTML = """
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng Dẫn - ARES Tool V23</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 157, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+        }
+        h1 { color: #00ff9d; text-align: center; margin-bottom: 40px; }
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 255, 157, 0.05);
+            border-left: 4px solid #00ff9d;
+            border-radius: 8px;
+        }
+        .step h2 { color: #ffc107; margin-bottom: 15px; }
+        .code {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            color: #00ff9d;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .back-btn {
+            display: inline-block;
+            background: #00ff9d;
+            color: #0a0e27;
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 30px;
+        }
+        .link { color: #00ff9d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 HƯỚNG DẪN SỬ DỤNG ARES TOOL</h1>
+        
+        <div class="step">
+            <h2>1. Tải Termux từ F-Droid</h2>
+            <p>Link: <a href="https://f-droid.org/en/packages/com.termux/" class="link">https://f-droid.org/en/packages/com.termux/</a></p>
+        </div>
+
+        <div class="step">
+            <h2>2. Cài đặt môi trường</h2>
+            <div class="code">pkg update && pkg upgrade -y</div>
+            <div class="code">pkg install python git -y</div>
+        </div>
+
+        <div class="step">
+            <h2>3. Tải tool</h2>
+            <div class="code">git clone https://github.com/quocdung1303/arestool.git</div>
+            <div class="code">cd arestool</div>
+            <div class="code">pip install -r requirements.txt</div>
+        </div>
+
+        <div class="step">
+            <h2>4. Lấy key</h2>
+            <p>Vào trang chủ → Click "Lấy Key Ngay" → Vượt Link4m → Copy key</p>
+        </div>
+
+        <div class="step">
+            <h2>5. Chạy tool</h2>
+            <div class="code">python obf-botcucvip.py</div>
+            <p>Nhập key khi được yêu cầu</p>
+        </div>
+
+        <center>
+            <a href="/" class="back-btn">← Về Trang Chủ</a>
+        </center>
     </div>
 </body>
 </html>
