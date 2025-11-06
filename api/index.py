@@ -82,6 +82,10 @@ def get_link():
     session_token = generate_session_token()
     unique_key = generate_key()
     
+    # Lấy IP của user
+    user_ip = request.remote_addr
+    user_agent = request.headers.get('User-Agent', 'Unknown')
+    
     # Tạo URL giả (Link4m không redirect được nên không cần URL thật)
     destination_url = "https://webkeyy.vercel.app"
     
@@ -95,13 +99,14 @@ def get_link():
         
         short_url = res["shortenedUrl"]
         
-        # Lưu session với KEY RIÊNG
+        # ✅ LƯU SESSION VỚI IP VÀ USER-AGENT
         data = load_data()
         data["sessions"][session_token] = {
             "unique_key": unique_key,
             "created_at": time.time(),
             "link_clicked": False,
-            "ip_address": request.remote_addr
+            "owner_ip": user_ip,  # ✅ LƯU IP
+            "owner_user_agent": user_agent  # ✅ LƯU USER-AGENT
         }
         save_data(data)
         
@@ -133,7 +138,6 @@ def get_key():
     
     # ✅ KIỂM TRA HẾT HẠN
     if current_time - created_at > 86400:
-        # Xóa session hết hạn ngay
         del data["sessions"][session_token]
         save_data(data)
         return jsonify({"status": "error", "msg": "Session đã hết hạn (quá 24 giờ)"})
@@ -148,7 +152,7 @@ def get_key():
         })
     
     # Đủ thời gian → Cho phép lấy key
-    unique_key = session.get("unique_key")
+    unique_key = session.get("unique_key"]
     expire_time = created_at + 86400
     
     if not unique_key:
@@ -168,11 +172,15 @@ def get_key():
 
 @app.route("/api/check_key")
 def check_key():
-    """Kiểm tra key có hợp lệ không"""
+    """Kiểm tra key có hợp lệ không - ✅ CHẶN SHARE KEY"""
     key = request.args.get("key")
     
     if not key:
         return jsonify({"status": "fail", "msg": "Thiếu key"})
+    
+    # ✅ LẤY IP VÀ USER-AGENT CỦA NGƯỜI ĐANG CHECK KEY
+    current_ip = request.remote_addr
+    current_user_agent = request.headers.get('User-Agent', 'Unknown')
     
     data = load_data()
     current_time = time.time()
@@ -183,10 +191,17 @@ def check_key():
             # ✅ KIỂM TRA HẾT HẠN
             created_at = session_data.get("created_at", 0)
             if current_time - created_at > 86400:
-                # Xóa key hết hạn ngay
                 del data["sessions"][session_token]
                 save_data(data)
                 return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
+            
+            # ✅ KIỂM TRA IP - CHẶN SHARE KEY
+            owner_ip = session_data.get("owner_ip")
+            if owner_ip and current_ip != owner_ip:
+                return jsonify({
+                    "status": "fail",
+                    "msg": f"Key này không phải của bạn! Key chỉ dùng cho người đã vượt link. Vui lòng vào https://webkeyy.vercel.app để lấy key riêng."
+                })
             
             # Key hợp lệ
             expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
