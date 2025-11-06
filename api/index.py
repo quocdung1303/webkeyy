@@ -110,14 +110,24 @@ def get_link():
         
         # Link4m API trả về link rút gọn trực tiếp (text)
         short_url = response.text.strip()
-        
-        # Kiểm tra link hợp lệ
-        if not short_url.startswith('http'):
-            print(f"[ERROR] Link4m trả về không hợp lệ: {short_url}")
-            return jsonify({
-                "status": "error", 
-                "msg": f"Link4m lỗi: {short_url}"
-            })
+        # Link4m API trả về link rút gọn trực tiếp (text)
+short_url = response.text.strip()
+
+# Lưu session
+data = load_data()
+data["sessions"][session_token] = {
+    # ... code cũ ...
+}
+save_data(data)
+
+print(f"[GET_LINK] Short URL: {short_url}")
+
+return jsonify({
+    "status": "ok",
+    "message": "Vui lòng vượt link để nhận key",
+    "url": short_url,
+    "token": session_token
+        })
         
         # Lưu session
         data = load_data()
