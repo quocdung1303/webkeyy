@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Key Verification</title>
+    <title>🔑 Hệ thống Key</title>
     <style>
         * {
             margin: 0;
@@ -82,19 +82,14 @@
             color: white;
         }
 
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
         .btn-success {
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
             color: white;
         }
 
-        .btn-success:hover:not(:disabled) {
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
         .btn:disabled {
@@ -132,37 +127,25 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .warning-box {
+        .timer {
             background: #fff3cd;
             border: 2px solid #ff9800;
             border-radius: 10px;
             padding: 15px;
             margin: 15px 0;
+            text-align: center;
         }
 
-        .warning-title {
+        .timer-title {
             color: #ff6b00;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 14px;
             margin-bottom: 10px;
         }
 
-        .warning-content {
-            color: #856404;
-            font-size: 14px;
-            line-height: 1.8;
-        }
-
-        .warning-content ol {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-
-        .warning-content li {
-            margin: 5px 0;
-        }
-
-        .warning-content strong {
+        .timer-value {
+            font-size: 32px;
+            font-weight: bold;
             color: #ff6b00;
         }
 
@@ -253,32 +236,6 @@
             color: #888;
             font-size: 12px;
         }
-
-        .success-checkmark {
-            color: #4CAF50;
-            font-size: 20px;
-            margin-right: 5px;
-        }
-
-        .arrow-down {
-            text-align: center;
-            font-size: 30px;
-            color: #667eea;
-            margin: 10px 0;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-10px);
-            }
-            60% {
-                transform: translateY(-5px);
-            }
-        }
     </style>
 </head>
 <body>
@@ -291,9 +248,9 @@
             <div class="step-content">
                 1. Nhấn "Lấy Link" để nhận link rút gọn<br>
                 2. Nhấn vào link và vượt qua trang quảng cáo<br>
-                3. <strong>SAU KHI VƯỢT XONG, ĐÓNG TAB VÀ QUAY LẠI TRANG NÀY</strong><br>
-                4. Nhấn nút "Lấy Key" để nhận key<br>
-                5. Copy key và sử dụng trong tool của bạn
+                3. Đợi đủ 15 giây (có đồng hồ đếm ngược)<br>
+                4. Nhấn "Lấy Key" để nhận key riêng của bạn<br>
+                5. Key có hiệu lực 24 giờ
             </div>
         </div>
 
@@ -306,8 +263,8 @@
 
         <div class="link-display" id="linkDisplay">
             <div style="text-align: center; margin-bottom: 15px;">
-                <span class="success-checkmark">✅</span>
-                <strong style="color: #2196F3; font-size: 16px;">Link của bạn đã sẵn sàng!</strong>
+                <span style="font-size: 30px;">✅</span><br>
+                <strong style="color: #2196F3; font-size: 16px;">Link sẵn sàng!</strong>
             </div>
             
             <div style="text-align: center;">
@@ -316,34 +273,23 @@
                 </a>
             </div>
 
-            <div class="warning-box">
-                <div class="warning-title">⚠️ LƯU Ý QUAN TRỌNG:</div>
-                <div class="warning-content">
-                    <ol>
-                        <li>Nhấn vào nút "🔗 Nhấn vào đây để vượt link" ở trên</li>
-                        <li><strong>Sau khi vượt link xong (khoảng 5-10 giây), hãy ĐÓNG TAB đó lại</strong></li>
-                        <li>Quay lại trang này</li>
-                        <li>Nhấn nút "🔑 Lấy Key" bên dưới</li>
-                    </ol>
-                    <p style="margin-top: 10px; font-style: italic;">
-                        💡 Mẹo: Sau khi vượt link, có thể mất vài giây để hệ thống xác nhận. 
-                        Nếu bấm "Lấy Key" bị lỗi, hãy đợi 5 giây rồi thử lại.
-                    </p>
+            <div class="timer" id="timerBox" style="display:none;">
+                <div class="timer-title">⏰ Vui lòng đợi:</div>
+                <div class="timer-value" id="timerValue">15</div>
+                <div style="font-size: 12px; margin-top: 5px; color: #856404;">
+                    giây nữa để lấy key
                 </div>
             </div>
 
-            <div class="arrow-down">↓</div>
-            <p style="text-align: center; color: #666; font-size: 14px; margin-top: 10px;">
-                Đã vượt link xong? Nhấn nút bên dưới để lấy key
+            <p style="text-align: center; color: #666; font-size: 14px; margin-top: 15px;">
+                💡 Sau khi vượt link xong, đợi đồng hồ về 0 rồi nhấn "Lấy Key"
             </p>
         </div>
 
         <div class="key-display" id="keyDisplay">
             <p style="font-size: 18px; margin-bottom: 5px;">🎉 Key của bạn:</p>
             <div class="key-value" id="keyValue"></div>
-            <p style="font-size: 12px; margin-top: 10px; opacity: 0.9;">
-                📋 Nhấn giữ để copy key
-            </p>
+            <p style="font-size: 12px; margin-top: 10px; opacity: 0.9;" id="keyExpire"></p>
         </div>
 
         <button class="btn btn-primary" id="getLinkBtn" onclick="getLink()">
@@ -355,12 +301,13 @@
         </button>
 
         <div class="footer">
-            Key được tạo mới mỗi ngày • Hỗ trợ: <a href="#" style="color: #667eea;">Contact</a>
+            Key riêng cho từng người • Hiệu lực 24 giờ
         </div>
     </div>
 
     <script>
         let sessionToken = localStorage.getItem('sessionToken');
+        let countdownInterval = null;
 
         function showMessage(text, type = 'info') {
             const msgEl = document.getElementById('message');
@@ -373,6 +320,30 @@
 
         function showLoading(show) {
             document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function startCountdown(seconds) {
+            let remaining = seconds;
+            document.getElementById('timerBox').style.display = 'block';
+            document.getElementById('timerValue').textContent = remaining;
+            document.getElementById('getKeyBtn').disabled = true;
+
+            // Clear interval cũ nếu có
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            countdownInterval = setInterval(() => {
+                remaining--;
+                document.getElementById('timerValue').textContent = remaining;
+
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('timerBox').style.display = 'none';
+                    document.getElementById('getKeyBtn').disabled = false;
+                    showMessage('✅ Đã đủ thời gian! Bạn có thể nhấn "Lấy Key" bây giờ.', 'success');
+                }
+            }, 1000);
         }
 
         async function getLink() {
@@ -389,11 +360,12 @@
                     
                     document.getElementById('shortLink').href = data.url;
                     document.getElementById('linkDisplay').classList.add('show');
-                    document.getElementById('getKeyBtn').disabled = false;
                     
-                    showMessage('✅ Link đã sẵn sàng! Hãy nhấn vào link để vượt, sau đó quay lại lấy key.', 'success');
+                    showMessage('✅ Link sẵn sàng! Hãy vượt link và đợi 15 giây.', 'success');
                     
-                    // Scroll to link display
+                    // Bắt đầu đếm ngược 15 giây
+                    startCountdown(15);
+                    
                     document.getElementById('linkDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
                     showMessage('❌ ' + data.msg, 'error');
@@ -422,23 +394,21 @@
                 
                 if (data.status === 'ok') {
                     document.getElementById('keyValue').textContent = data.key;
+                    document.getElementById('keyExpire').textContent = 'Hết hạn: ' + data.expire_at;
                     document.getElementById('keyDisplay').classList.add('show');
-                    showMessage('🎉 Đã lấy key thành công! Key có hiệu lực đến hết ngày ' + data.date, 'success');
+                    showMessage('🎉 Lấy key thành công!', 'success');
                     
-                    // Scroll to key display
-                    document.getElementById('keyDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
-                    // Auto copy to clipboard
+                    // Auto copy
                     try {
                         navigator.clipboard.writeText(data.key);
                         setTimeout(() => {
                             showMessage('📋 Key đã được copy vào clipboard!', 'info');
                         }, 1000);
-                    } catch (e) {
-                        // Clipboard API not available
-                    }
+                    } catch (e) {}
+                    
+                    document.getElementById('keyDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    showMessage('❌ ' + data.msg + ' (Có thể bạn chưa vượt link hoặc cần đợi thêm vài giây)', 'error');
+                    showMessage('❌ ' + data.msg, 'error');
                     document.getElementById('getKeyBtn').disabled = false;
                 }
             } catch (error) {
@@ -449,10 +419,10 @@
             }
         }
 
-        // Check if user has session token from previous visit
+        // Khôi phục countdown nếu refresh trang
         if (sessionToken) {
             document.getElementById('getKeyBtn').disabled = false;
-            showMessage('💡 Bạn đã lấy link trước đó. Nếu đã vượt link, hãy nhấn "Lấy Key"', 'info');
+            showMessage('💡 Bạn đã lấy link trước đó. Nếu đủ 15 giây, hãy nhấn "Lấy Key"', 'info');
         }
     </script>
 </body>
