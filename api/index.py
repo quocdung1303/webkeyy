@@ -97,18 +97,52 @@ def index():
     return render_template_string(INDEX_HTML)
 
 @app.route("/api/get_link")
+@app.route("/api/get_link")
 def get_link():
-    """API tạo link rút gọn Link4m"""
+    """Tạo link rút gọn Link4m"""
     try:
-        link4m_url = f"https://link4m.co/api?api={LINK4M_KEY}&url=https://webkeyy.vercel.app/success&format=text"
-        return jsonify({
-            "status": "ok",
-            "link": link4m_url
-        })
-    except Exception as e:
+        import requests
+        
+        # Gọi API Link4m
+        api_url = f"https://link4m.co/api?api={LINK4M_KEY}&url=https://webkeyy.vercel.app/success"
+        
+        print(f"[INFO] Đang gọi Link4m API...")
+        response = requests.get(api_url, timeout=10)
+        
+        if response.status_code == 200:
+            shortened_link = response.text.strip()
+            
+            # Kiểm tra link hợp lệ
+            if shortened_link.startswith('http'):
+                print(f"[SUCCESS] Link rút gọn: {shortened_link}")
+                return jsonify({
+                    "status": "ok",
+                    "link": shortened_link
+                })
+            else:
+                print(f"[ERROR] Link4m trả về: {shortened_link}")
+                return jsonify({
+                    "status": "error",
+                    "msg": "Link4m API lỗi: " + shortened_link
+                }), 500
+        else:
+            print(f"[ERROR] HTTP {response.status_code}")
+            return jsonify({
+                "status": "error",
+                "msg": f"Link4m API lỗi (HTTP {response.status_code})"
+            }), 500
+            
+    except requests.Timeout:
+        print("[ERROR] Timeout khi gọi Link4m")
         return jsonify({
             "status": "error",
-            "msg": str(e)
+            "msg": "Link4m không phản hồi. Vui lòng thử lại."
+        }), 500
+    except Exception as e:
+        print(f"[ERROR] get_link: {e}")
+        return jsonify({
+            "status": "error",
+            "msg": "Không thể tạo link. Vui lòng thử lại sau."
         }), 500
 
 @app.route("/success")
