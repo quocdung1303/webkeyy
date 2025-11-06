@@ -10,7 +10,7 @@ from collections import defaultdict, deque
 
 app = Flask(__name__)
 
-LINK4M_API = "https://link4m.co/api-shorten/v2"
+#XOÁ DÒNG NÀY-KHÔNG CẦN NỮA
 LINK4M_KEY = os.getenv("LINK4M_KEY")
 
 KEY_FILE = "/tmp/key.json"
@@ -87,7 +87,7 @@ def home():
 
 @app.route("/api/get_link")
 def get_link():
-    """Tạo link rút gọn Link4m"""
+    """Tạo link rút gọn Link4m - API mới"""
     if not LINK4M_KEY:
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
@@ -95,33 +95,45 @@ def get_link():
     user_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
-    # URL đích là trang success với token
-    destination_url = f"https://webkeyy.vercel.app/success?id={session_token}"
+    # URL đích - ĐỔI DOMAIN NẾU CẦN
+    destination_url = f"https://webkeyy.vercel.app/success?s={session_token}"
     
     try:
-        create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
-        res = requests.get(create_url, timeout=10).json()
+        # API MỚI của Link4m (format đơn giản hơn)
+        api_url = f"https://link4m.co/api?api={LINK4M_KEY}&url={destination_url}"
         
-        if res.get("status") != "success" or not res.get("shortenedUrl"):
-            return jsonify({"status": "error", "msg": "Không tạo được link rút gọn"})
+        print(f"[INFO] Gọi Link4m API: {api_url}")
         
-        short_url = res["shortenedUrl"]
+        response = requests.get(api_url, timeout=10)
         
-        # Lưu session NHƯNG CHƯA TẠO KEY
+        print(f"[INFO] Link4m response: {response.text}")
+        
+        # Link4m API trả về link rút gọn trực tiếp (text)
+        short_url = response.text.strip()
+        
+        # Kiểm tra link hợp lệ
+        if not short_url.startswith('http'):
+            print(f"[ERROR] Link4m trả về không hợp lệ: {short_url}")
+            return jsonify({
+                "status": "error", 
+                "msg": f"Link4m lỗi: {short_url}"
+            })
+        
+        # Lưu session
         data = load_data()
         data["sessions"][session_token] = {
             "unique_key": None,
             "created_at": time.time(),
             "verified": False,
             "owner_ip": user_ip,
-            "ip_list": [user_ip],  # ← THÊM: List IP tracking
-            "max_ips": 3,          # ← THÊM: Tối đa 3 IP
-            "check_count": 0,      # ← THÊM: Đếm số lần check
+            "ip_list": [user_ip],
+            "max_ips": 3,
+            "check_count": 0,
             "owner_user_agent": user_agent
         }
         save_data(data)
         
-        print(f"[GET_LINK] Token: {session_token[:8]}... | IP: {user_ip}")
+        print(f"[GET_LINK] Token: {session_token[:8]}... | IP: {user_ip} | Short URL: {short_url}")
         
         return jsonify({
             "status": "ok",
@@ -129,6 +141,7 @@ def get_link():
             "url": short_url,
             "token": session_token
         })
+        
     except Exception as e:
         print(f"[ERROR] get_link: {e}")
         return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})
