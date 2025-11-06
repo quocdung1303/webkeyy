@@ -96,7 +96,7 @@ def get_link():
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
     # URL đích là trang success với token
-    destination_url = f"https://webkeyy.vercel.app/success?token={session_token}"
+    destination_url = f"https://webkeyy.vercel.app/success?id={session_token}"
     
     try:
         create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
