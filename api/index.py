@@ -136,7 +136,7 @@ def get_link():
 @app.route("/success")
 def success_page():
     """Trang đích sau khi vượt Link4m - TỰ ĐỘNG TẠO VÀ HIỂN THỊ KEY"""
-    session_token = request.args.get("token")
+    session_token = request.args.get("id")
     
     if not session_token:
         return render_template_string(ERROR_PAGE, error_msg="Thiếu token")
