@@ -111,16 +111,16 @@ def get_link():
         # Link4m API trả về link rút gọn trực tiếp (text)
         short_url = response.text.strip()
         # Link4m API trả về link rút gọn trực tiếp (text)
-short_url = response.text.strip()
+        short_url = response.text.strip()
 
-# Lưu session
-data = load_data()
-data["sessions"][session_token] = {
-    # ... code cũ ...
-}
-save_data(data)
+        # Lưu session
+        data = load_data()
+        data["sessions"][session_token] = {
+        # ... code cũ ...
+        }
+        save_data(data)
 
-print(f"[GET_LINK] Short URL: {short_url}")
+        print(f"[GET_LINK] Short URL: {short_url}")
 
 return jsonify({
     "status": "ok",
