@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 import json
 import os
 import time
@@ -41,7 +41,7 @@ def save_data(data):
         json.dump(data, f, indent=2)
 
 def cleanup_old_sessions():
-    """Xóa session cũ hơn 24 giờ - TỰ ĐỘNG"""
+    """Xóa session cũ hơn 24 giờ"""
     data = load_data()
     current_time = time.time()
     sessions_to_delete = []
@@ -55,7 +55,6 @@ def cleanup_old_sessions():
     
     if sessions_to_delete:
         save_data(data)
-        print(f"[CLEANUP] Đã xóa {len(sessions_to_delete)} session hết hạn")
 
 @app.before_request
 def auto_cleanup():
@@ -78,12 +77,11 @@ def get_link():
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
     session_token = generate_session_token()
-    unique_key = generate_key()
-    
     user_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
-    destination_url = "https://webkeyy.vercel.app"
+    # URL đích là trang success với token
+    destination_url = f"https://webkeyy.vercel.app/success?token={session_token}"
     
     try:
         create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
@@ -94,11 +92,12 @@ def get_link():
         
         short_url = res["shortenedUrl"]
         
+        # Lưu session NHƯNG CHƯA TẠO KEY
         data = load_data()
         data["sessions"][session_token] = {
-            "unique_key": unique_key,
+            "unique_key": None,  # Chưa có key
             "created_at": time.time(),
-            "link_clicked": False,
+            "verified": False,  # Chưa vượt link
             "owner_ip": user_ip,
             "owner_user_agent": user_agent
         }
@@ -106,59 +105,59 @@ def get_link():
         
         return jsonify({
             "status": "ok",
-            "message": "Vui lòng vượt link và đợi 15 giây",
+            "message": "Vui lòng vượt link để nhận key",
             "url": short_url,
             "token": session_token
         })
     except Exception as e:
         return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})
 
-@app.route("/api/get_key")
-def get_key():
-    """Lấy KEY sau khi đã đợi đủ thời gian"""
+@app.route("/success")
+def success_page():
+    """Trang đích sau khi vượt Link4m - TỰ ĐỘNG TẠO VÀ HIỂN THỊ KEY"""
     session_token = request.args.get("token")
     
     if not session_token:
-        return jsonify({"status": "error", "msg": "Thiếu token"})
+        return render_template_string(ERROR_PAGE, error_msg="Thiếu token")
     
     data = load_data()
     
     if session_token not in data.get("sessions", {}):
-        return jsonify({"status": "error", "msg": "Session không tồn tại hoặc đã hết hạn"})
+        return render_template_string(ERROR_PAGE, error_msg="Session không tồn tại hoặc đã hết hạn")
     
     session = data["sessions"][session_token]
-    created_at = session.get("created_at", 0)
     current_time = time.time()
+    created_at = session.get("created_at", 0)
     
+    # Kiểm tra hết hạn
     if current_time - created_at > 86400:
         del data["sessions"][session_token]
         save_data(data)
-        return jsonify({"status": "error", "msg": "Session đã hết hạn (quá 24 giờ)"})
+        return render_template_string(ERROR_PAGE, error_msg="Session đã hết hạn (quá 24 giờ)")
     
-    time_elapsed = current_time - created_at
-    if time_elapsed < 15:
-        remaining = int(15 - time_elapsed)
-        return jsonify({
-            "status": "error",
-            "msg": f"Vui lòng vượt link và đợi thêm {remaining} giây nữa"
-        })
+    # Lấy IP hiện tại
+    current_ip = request.remote_addr
+    owner_ip = session.get("owner_ip")
     
-    unique_key = session.get("unique_key")
+    # Kiểm tra IP - CHẶN SHARE KEY
+    if owner_ip and current_ip != owner_ip:
+        return render_template_string(ERROR_PAGE, 
+            error_msg="Key này không phải của bạn! Vui lòng vào https://webkeyy.vercel.app để lấy key riêng.")
+    
+    # TẠO KEY NẾU CHƯA CÓ (lần đầu vào trang success)
+    if not session.get("unique_key"):
+        session["unique_key"] = generate_key()
+        session["verified"] = True
+        data["sessions"][session_token] = session
+        save_data(data)
+    
+    unique_key = session["unique_key"]
     expire_time = created_at + 86400
+    expire_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time))
     
-    if not unique_key:
-        return jsonify({"status": "error", "msg": "Key không tồn tại"})
-    
-    data["sessions"][session_token]["link_clicked"] = True
-    save_data(data)
-    
-    return jsonify({
-        "status": "ok",
-        "key": unique_key,
-        "created_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at)),
-        "expire_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time)),
-        "is_unique": True
-    })
+    return render_template_string(SUCCESS_PAGE, 
+        key=unique_key, 
+        expire_at=expire_str)
 
 @app.route("/api/check_key")
 def check_key():
@@ -169,26 +168,28 @@ def check_key():
         return jsonify({"status": "fail", "msg": "Thiếu key"})
     
     current_ip = request.remote_addr
-    current_user_agent = request.headers.get('User-Agent', 'Unknown')
-    
     data = load_data()
     current_time = time.time()
     
     for session_token, session_data in data.get("sessions", {}).items():
         if session_data.get("unique_key") == key:
             created_at = session_data.get("created_at", 0)
+            
+            # Kiểm tra hết hạn
             if current_time - created_at > 86400:
                 del data["sessions"][session_token]
                 save_data(data)
                 return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
             
+            # Kiểm tra IP
             owner_ip = session_data.get("owner_ip")
             if owner_ip and current_ip != owner_ip:
                 return jsonify({
                     "status": "fail",
-                    "msg": "Key này không phải của bạn! Key chỉ dùng cho người đã vượt link. Vui lòng vào https://webkeyy.vercel.app để lấy key riêng."
+                    "msg": "Key này không phải của bạn! Vui lòng vào https://webkeyy.vercel.app để lấy key riêng."
                 })
             
+            # Key hợp lệ
             expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
             return jsonify({
                 "status": "ok",
@@ -198,3 +199,269 @@ def check_key():
             })
     
     return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
+
+# HTML TEMPLATE CHO TRANG SUCCESS
+SUCCESS_PAGE = """
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 Key Của Bạn - ARES Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        .success-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #00ff9d;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0, 255, 157, 0.3);
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .title {
+            font-size: 48px;
+            color: #00ff9d;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+        }
+        .subtitle {
+            font-size: 24px;
+            color: #ffc107;
+            margin-bottom: 30px;
+        }
+        .key-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #00ff9d;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .key-label {
+            font-size: 18px;
+            color: #00ff9d;
+            margin-bottom: 15px;
+        }
+        .key-value {
+            font-size: 22px;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            background: rgba(0, 255, 157, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+        .copy-btn {
+            background: #00ff9d;
+            color: #0a0e27;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .copy-btn:hover {
+            background: #00cc7d;
+            transform: scale(1.05);
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        .info {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .info-item {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .info-label {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #00ff9d;
+            border-radius: 10px;
+            color: #00ff9d;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: rgba(0, 255, 157, 0.2);
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #00ff9d;
+            color: #0a0e27;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: none;
+            animation: slideIn 0.3s ease-in;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-box">
+            <div class="title">🎉</div>
+            <div class="subtitle">Chúc Mừng!</div>
+            <p style="font-size: 18px; margin-bottom: 20px;">
+                Bạn đã vượt link thành công!<br>
+                Đây là key riêng của bạn:
+            </p>
+            
+            <div class="key-container">
+                <div class="key-label">🔑 KEY CỦA BẠN:</div>
+                <div class="key-value" id="keyValue">{{ key }}</div>
+                <button class="copy-btn" onclick="copyKey()">📋 Copy Key</button>
+            </div>
+            
+            <div class="info">
+                <div class="info-item">
+                    <span class="info-label">⏰ Hết hạn:</span> {{ expire_at }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">⚠️ Lưu ý:</span> Key chỉ sử dụng được trên thiết bị này
+                </div>
+                <div class="info-item">
+                    <span class="info-label">🔒 Bảo mật:</span> Không chia sẻ key cho người khác
+                </div>
+            </div>
+            
+            <a href="/" class="back-btn">🏠 Về Trang Chủ</a>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast">✅ Đã copy key vào clipboard!</div>
+    
+    <script>
+        function copyKey() {
+            const keyValue = document.getElementById('keyValue').innerText;
+            navigator.clipboard.writeText(keyValue).then(() => {
+                showToast();
+            });
+        }
+        
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+"""
+
+# HTML TEMPLATE CHO TRANG LỖI
+ERROR_PAGE = """
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❌ Lỗi - ARES Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .error-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #ff4444;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+        }
+        .error-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .error-title {
+            font-size: 28px;
+            color: #ff4444;
+            margin-bottom: 20px;
+        }
+        .error-msg {
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .back-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #00ff9d;
+            color: #0a0e27;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: #00cc7d;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-box">
+        <div class="error-icon">❌</div>
+        <div class="error-title">Có Lỗi Xảy Ra</div>
+        <div class="error-msg">{{ error_msg }}</div>
+        <a href="/" class="back-btn">🏠 Về Trang Chủ</a>
+    </div>
+</body>
+</html>
+"""
