@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Key Verification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .step-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .step-content {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .link-display {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-size: 14px;
+            display: none;
+        }
+
+        .link-display.show {
+            display: block;
+        }
+
+        .link-url {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .key-display {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+            display: none;
+        }
+
+        .key-display.show {
+            display: block;
+        }
+
+        .key-value {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.error {
+            background: #fee;
+            color: #c33;
+            border-left: 4px solid #c33;
+        }
+
+        .message.success {
+            background: #efe;
+            color: #3c3;
+            border-left: 4px solid #3c3;
+        }
+
+        .message.info {
+            background: #eef;
+            color: #33c;
+            border-left: 4px solid #33c;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Hệ thống Key</h1>
+        <p class="subtitle">Vượt link để nhận key miễn phí</p>
+
+        <div class="step">
+            <div class="step-title">📋 Hướng dẫn:</div>
+            <div class="step-content">
+                1. Nhấn "Lấy Link" để nhận link rút gọn<br>
+                2. Vượt link để hỗ trợ chúng tôi<br>
+                3. Sau khi vượt xong, quay lại nhấn "Lấy Key"<br>
+                4. Sử dụng key trong tool/ứng dụng của bạn
+            </div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Đang xử lý...</p>
+        </div>
+
+        <div class="link-display" id="linkDisplay">
+            <p>✅ Link của bạn đã sẵn sàng!</p>
+            <a href="#" id="shortLink" target="_blank" class="link-url">Nhấn vào đây để vượt link</a>
+        </div>
+
+        <div class="key-display" id="keyDisplay">
+            <p>🎉 Key của bạn:</p>
+            <div class="key-value" id="keyValue"></div>
+        </div>
+
+        <button class="btn btn-primary" id="getLinkBtn" onclick="getLink()">
+            📎 Lấy Link
+        </button>
+
+        <button class="btn btn-success" id="getKeyBtn" onclick="getKey()" disabled>
+            🔑 Lấy Key
+        </button>
+
+        <div class="footer">
+            Key được tạo mới mỗi ngày
+        </div>
+    </div>
+
+    <script>
+        let sessionToken = localStorage.getItem('sessionToken');
+
+        function showMessage(text, type = 'info') {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = text;
+            msgEl.className = `message ${type} show`;
+            setTimeout(() => {
+                msgEl.classList.remove('show');
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        async function getLink() {
+            showLoading(true);
+            document.getElementById('getLinkBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/get_link');
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    sessionToken = data.token;
+                    localStorage.setItem('sessionToken', sessionToken);
+                    
+                    document.getElementById('shortLink').href = data.url;
+                    document.getElementById('shortLink').textContent = data.url;
+                    document.getElementById('linkDisplay').classList.add('show');
+                    document.getElementById('getKeyBtn').disabled = false;
+                    
+                    showMessage('✅ ' + data.message, 'success');
+                } else {
+                    showMessage('❌ ' + data.msg, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Lỗi kết nối: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+                document.getElementById('getLinkBtn').disabled = false;
+            }
+        }
+
+        async function getKey() {
+            if (!sessionToken) {
+                showMessage('❌ Vui lòng lấy link trước!', 'error');
+                return;
+            }
+
+            showLoading(true);
+            document.getElementById('getKeyBtn').disabled = true;
+            
+            try {
+                const response = await fetch(`/api/get_key?token=${sessionToken}`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('keyValue').textContent = data.key;
+                    document.getElementById('keyDisplay').classList.add('show');
+                    showMessage('🎉 Đã lấy key thành công!', 'success');
+                } else {
+                    showMessage('❌ ' + data.msg, 'error');
+                    document.getElementById('getKeyBtn').disabled = false;
+                }
+            } catch (error) {
+                showMessage('❌ Lỗi kết nối: ' + error.message, 'error');
+                document.getElementById('getKeyBtn').disabled = false;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        if (sessionToken) {
+            document.getElementById('getKeyBtn').disabled = false;
+        }
+    </script>
+</body>
+</html>
