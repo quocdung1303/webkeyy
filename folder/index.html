@@ -3,29 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARES Key System</title>
+    <title>ARES Tool - Hệ Thống Quản Lý Key</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
             color: #fff;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 20px;
         }
+
         .container {
-            max-width: 500px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(0, 255, 157, 0.3);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(0, 255, 157, 0.2);
+            max-width: 600px;
+            margin: 0 auto;
+            padding-top: 40px;
         }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
         .logo {
             font-size: 64px;
             font-weight: bold;
@@ -34,99 +38,339 @@
             letter-spacing: 8px;
             margin-bottom: 10px;
         }
+
         .subtitle {
             font-size: 18px;
             color: #ffc107;
+            margin-bottom: 20px;
+        }
+
+        .description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 10px;
             margin-bottom: 30px;
         }
+
+        .status-item {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .status-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #00ff9d;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 40px rgba(0, 255, 157, 0.2);
+        }
+
+        .card-title {
+            font-size: 28px;
+            color: #00ff9d;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .card-description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
         .get-key-btn {
+            width: 100%;
             background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
             color: #0a0e27;
             border: none;
-            padding: 15px 40px;
-            font-size: 18px;
+            padding: 18px;
+            font-size: 20px;
             font-weight: bold;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
-            width: 100%;
-        }
-        .get-key-btn:hover:not(:disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.5);
-        }
-        .get-key-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .info-box {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            text-align: left;
-        }
-        .info-item {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
-            margin-bottom: 10px;
+        }
+
+        .get-key-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.4);
+        }
+
+        .get-key-btn:active {
+            transform: translateY(0);
+        }
+
+        .get-key-btn:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .link-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .link-box.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .link-title {
+            font-size: 20px;
+            color: #ffc107;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .link-instruction {
+            font-size: 15px;
             color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
         }
-        .link {
-            color: #00ff9d;
+
+        .link-button {
+            width: 100%;
+            background: #ffc107;
+            color: #0a0e27;
+            border: none;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
             text-decoration: none;
-            font-weight: 600;
+            display: block;
+            text-align: center;
         }
-        .link:hover {
-            text-decoration: underline;
+
+        .link-button:hover {
+            background: #ffb300;
+            transform: scale(1.02);
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .info-text {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #0a0e27;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #ff4444;
+            text-align: center;
+            display: none;
+        }
+
+        .error-msg.active {
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">ARES</div>
-        <div class="subtitle">LICENSE KEY SYSTEM V2.0</div>
-        
-        <button class="get-key-btn" onclick="getKey()">Lấy Key Ngay</button>
-        
-        <div class="info-box">
-            <div class="info-item">⏰ Key có hiệu lực 24 giờ</div>
-            <div class="info-item">🔒 Bảo mật cao, chống chia sẻ thông minh</div>
-            <div class="info-item">🎁 Hoàn toàn miễn phí</div>
-            <div class="info-item">
-                📖 <a href="/huong-dan" class="link">Xem hướng dẫn cài đặt tool →</a>
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">ARES</div>
+            <div class="subtitle">ARES TOOL V23 - OPTIMIZED FIX</div>
+            <div class="description">
+                Nhận key miễn phí với hiệu lực 24 giờ để sử dụng ARES Tool
             </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-icon">✅</div>
+                <div class="status-text">Hệ thống hoạt động</div>
+            </div>
+            <div class="status-item">
+                <div class="status-icon">🔑</div>
+                <div class="status-text">Key 24 giờ</div>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="main-card">
+            <div class="card-title">🎁 Nhận Key Miễn Phí</div>
+            <div class="card-description">
+                Click vào nút bên dưới để nhận link. Sau khi vượt link quảng cáo, 
+                bạn sẽ tự động nhận được key riêng có hiệu lực 24 giờ.
+            </div>
+
+            <button class="get-key-btn" id="getKeyBtn" onclick="getLink()">
+                <span id="btnText">🔑 Lấy Key Ngay</span>
+            </button>
+
+            <div class="error-msg" id="errorMsg"></div>
+
+            <!-- Link Box -->
+            <div class="link-box" id="linkBox">
+                <div class="link-title">🔗 Link Của Bạn</div>
+                <div class="link-instruction">
+                    Click vào nút bên dưới để vượt link quảng cáo Link4m. 
+                    <strong>Sau khi vượt xong, bạn sẽ tự động nhận được key!</strong>
+                </div>
+                <a class="link-button" id="link4mButton" href="#" target="_blank">
+                    ↗ Vượt Link Để Nhận Key
+                </a>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <div class="info-item">
+                <div class="info-icon">⏰</div>
+                <div class="info-text">
+                    Key riêng cho từng người • Hiệu lực 24 giờ • ARES Tool V27
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">🔒</div>
+                <div class="info-text">
+                    Key chỉ hoạt động trên thiết bị này. Không chia sẻ key cho người khác.
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">💡</div>
+                <div class="info-text">
+                    Sau khi vượt link, bạn sẽ được chuyển đến trang hiển thị key tự động.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Developed with ❤️ for ARES Community
         </div>
     </div>
 
     <script>
-        async function getKey() {
-            const btn = event.target;
-            const originalText = btn.textContent;
+        async function getLink() {
+            const btn = document.getElementById('getKeyBtn');
+            const btnText = document.getElementById('btnText');
+            const linkBox = document.getElementById('linkBox');
+            const link4mButton = document.getElementById('link4mButton');
+            const errorMsg = document.getElementById('errorMsg');
+
+            // Reset error
+            errorMsg.classList.remove('active');
+
+            // Disable button
             btn.disabled = true;
-            btn.textContent = '⏳ Đang tạo link...';
-            
+            btnText.innerHTML = '<span class="loading"></span> Đang tạo link...';
+
             try {
                 const response = await fetch('/api/get_link');
                 const data = await response.json();
-                
+
                 if (data.status === 'ok') {
-                    window.location.href = data.link;
+                    // Hiển thị link box
+                    linkBox.classList.add('active');
+                    link4mButton.href = data.url;
+
+                    // Update button
+                    btnText.textContent = '✅ Đã tạo link thành công';
+
+                    // Scroll to link box
+                    linkBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    alert('❌ Lỗi: ' + data.msg);
-                    btn.disabled = false;
-                    btn.textContent = originalText;
+                    throw new Error(data.msg || 'Không thể tạo link');
                 }
             } catch (error) {
-                alert('❌ Lỗi kết nối! Vui lòng thử lại.');
-                console.error('Error:', error);
+                errorMsg.textContent = '❌ Lỗi: ' + error.message;
+                errorMsg.classList.add('active');
+                btnText.textContent = '🔑 Lấy Key Ngay';
                 btn.disabled = false;
-                btn.textContent = originalText;
             }
         }
     </script>
 </body>
-</html>
+    </html>
