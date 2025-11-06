@@ -103,13 +103,12 @@
         }
 
         .link-display {
-            background: #f0f0f0;
-            padding: 15px;
+            background: #e3f2fd;
+            padding: 20px;
             border-radius: 10px;
             margin: 15px 0;
-            word-break: break-all;
-            font-size: 14px;
             display: none;
+            border: 2px solid #2196F3;
         }
 
         .link-display.show {
@@ -117,8 +116,54 @@
         }
 
         .link-url {
-            color: #667eea;
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            margin: 10px 0;
+            transition: all 0.3s;
             font-weight: bold;
+        }
+
+        .link-url:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .warning-title {
+            color: #ff6b00;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .warning-content {
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .warning-content ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .warning-content li {
+            margin: 5px 0;
+        }
+
+        .warning-content strong {
+            color: #ff6b00;
         }
 
         .key-display {
@@ -136,11 +181,14 @@
         }
 
         .key-value {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             margin-top: 10px;
             word-break: break-all;
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
         }
 
         .message {
@@ -205,6 +253,32 @@
             color: #888;
             font-size: 12px;
         }
+
+        .success-checkmark {
+            color: #4CAF50;
+            font-size: 20px;
+            margin-right: 5px;
+        }
+
+        .arrow-down {
+            text-align: center;
+            font-size: 30px;
+            color: #667eea;
+            margin: 10px 0;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -216,9 +290,10 @@
             <div class="step-title">📋 Hướng dẫn:</div>
             <div class="step-content">
                 1. Nhấn "Lấy Link" để nhận link rút gọn<br>
-                2. Vượt link để hỗ trợ chúng tôi<br>
-                3. Sau khi vượt xong, quay lại nhấn "Lấy Key"<br>
-                4. Sử dụng key trong tool/ứng dụng của bạn
+                2. Nhấn vào link và vượt qua trang quảng cáo<br>
+                3. <strong>SAU KHI VƯỢT XONG, ĐÓNG TAB VÀ QUAY LẠI TRANG NÀY</strong><br>
+                4. Nhấn nút "Lấy Key" để nhận key<br>
+                5. Copy key và sử dụng trong tool của bạn
             </div>
         </div>
 
@@ -230,13 +305,45 @@
         </div>
 
         <div class="link-display" id="linkDisplay">
-            <p>✅ Link của bạn đã sẵn sàng!</p>
-            <a href="#" id="shortLink" target="_blank" class="link-url">Nhấn vào đây để vượt link</a>
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span class="success-checkmark">✅</span>
+                <strong style="color: #2196F3; font-size: 16px;">Link của bạn đã sẵn sàng!</strong>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="#" id="shortLink" target="_blank" class="link-url">
+                    🔗 Nhấn vào đây để vượt link
+                </a>
+            </div>
+
+            <div class="warning-box">
+                <div class="warning-title">⚠️ LƯU Ý QUAN TRỌNG:</div>
+                <div class="warning-content">
+                    <ol>
+                        <li>Nhấn vào nút "🔗 Nhấn vào đây để vượt link" ở trên</li>
+                        <li><strong>Sau khi vượt link xong (khoảng 5-10 giây), hãy ĐÓNG TAB đó lại</strong></li>
+                        <li>Quay lại trang này</li>
+                        <li>Nhấn nút "🔑 Lấy Key" bên dưới</li>
+                    </ol>
+                    <p style="margin-top: 10px; font-style: italic;">
+                        💡 Mẹo: Sau khi vượt link, có thể mất vài giây để hệ thống xác nhận. 
+                        Nếu bấm "Lấy Key" bị lỗi, hãy đợi 5 giây rồi thử lại.
+                    </p>
+                </div>
+            </div>
+
+            <div class="arrow-down">↓</div>
+            <p style="text-align: center; color: #666; font-size: 14px; margin-top: 10px;">
+                Đã vượt link xong? Nhấn nút bên dưới để lấy key
+            </p>
         </div>
 
         <div class="key-display" id="keyDisplay">
-            <p>🎉 Key của bạn:</p>
+            <p style="font-size: 18px; margin-bottom: 5px;">🎉 Key của bạn:</p>
             <div class="key-value" id="keyValue"></div>
+            <p style="font-size: 12px; margin-top: 10px; opacity: 0.9;">
+                📋 Nhấn giữ để copy key
+            </p>
         </div>
 
         <button class="btn btn-primary" id="getLinkBtn" onclick="getLink()">
@@ -248,7 +355,7 @@
         </button>
 
         <div class="footer">
-            Key được tạo mới mỗi ngày
+            Key được tạo mới mỗi ngày • Hỗ trợ: <a href="#" style="color: #667eea;">Contact</a>
         </div>
     </div>
 
@@ -281,19 +388,22 @@
                     localStorage.setItem('sessionToken', sessionToken);
                     
                     document.getElementById('shortLink').href = data.url;
-                    document.getElementById('shortLink').textContent = data.url;
                     document.getElementById('linkDisplay').classList.add('show');
                     document.getElementById('getKeyBtn').disabled = false;
                     
-                    showMessage('✅ ' + data.message, 'success');
+                    showMessage('✅ Link đã sẵn sàng! Hãy nhấn vào link để vượt, sau đó quay lại lấy key.', 'success');
+                    
+                    // Scroll to link display
+                    document.getElementById('linkDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
                     showMessage('❌ ' + data.msg, 'error');
+                    document.getElementById('getLinkBtn').disabled = false;
                 }
             } catch (error) {
                 showMessage('❌ Lỗi kết nối: ' + error.message, 'error');
+                document.getElementById('getLinkBtn').disabled = false;
             } finally {
                 showLoading(false);
-                document.getElementById('getLinkBtn').disabled = false;
             }
         }
 
@@ -313,9 +423,22 @@
                 if (data.status === 'ok') {
                     document.getElementById('keyValue').textContent = data.key;
                     document.getElementById('keyDisplay').classList.add('show');
-                    showMessage('🎉 Đã lấy key thành công!', 'success');
+                    showMessage('🎉 Đã lấy key thành công! Key có hiệu lực đến hết ngày ' + data.date, 'success');
+                    
+                    // Scroll to key display
+                    document.getElementById('keyDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Auto copy to clipboard
+                    try {
+                        navigator.clipboard.writeText(data.key);
+                        setTimeout(() => {
+                            showMessage('📋 Key đã được copy vào clipboard!', 'info');
+                        }, 1000);
+                    } catch (e) {
+                        // Clipboard API not available
+                    }
                 } else {
-                    showMessage('❌ ' + data.msg, 'error');
+                    showMessage('❌ ' + data.msg + ' (Có thể bạn chưa vượt link hoặc cần đợi thêm vài giây)', 'error');
                     document.getElementById('getKeyBtn').disabled = false;
                 }
             } catch (error) {
@@ -326,9 +449,11 @@
             }
         }
 
+        // Check if user has session token from previous visit
         if (sessionToken) {
             document.getElementById('getKeyBtn').disabled = false;
+            showMessage('💡 Bạn đã lấy link trước đó. Nếu đã vượt link, hãy nhấn "Lấy Key"', 'info');
         }
     </script>
 </body>
-</html>
+    </html>
