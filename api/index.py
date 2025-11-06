@@ -87,7 +87,7 @@ def home():
 
 @app.route("/api/get_link")
 def get_link():
-    """Tạo link rút gọn Link4m - API mới"""
+    """Tạo link rút gọn Link4m"""
     if not LINK4M_KEY:
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
@@ -99,7 +99,7 @@ def get_link():
     destination_url = f"https://webkeyy.vercel.app/success?s={session_token}"
     
     try:
-        # API MỚI của Link4m (format đơn giản hơn)
+        # API MỚI của Link4m
         api_url = f"https://link4m.co/api?api={LINK4M_KEY}&url={destination_url}"
         
         print(f"[INFO] Gọi Link4m API: {api_url}")
@@ -110,24 +110,6 @@ def get_link():
         
         # Link4m API trả về link rút gọn trực tiếp (text)
         short_url = response.text.strip()
-        # Link4m API trả về link rút gọn trực tiếp (text)
-        short_url = response.text.strip()
-
-        # Lưu session
-        data = load_data()
-        data["sessions"][session_token] = {
-        # ... code cũ ...
-        }
-        save_data(data)
-
-        print(f"[GET_LINK] Short URL: {short_url}")
-
-return jsonify({
-    "status": "ok",
-    "message": "Vui lòng vượt link để nhận key",
-    "url": short_url,
-    "token": session_token
-        })
         
         # Lưu session
         data = load_data()
@@ -154,12 +136,12 @@ return jsonify({
         
     except Exception as e:
         print(f"[ERROR] get_link: {e}")
-        return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})
+        return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})})
 
 @app.route("/success")
 def success_page():
     """Trang đích sau khi vượt Link4m - TỰ ĐỘNG TẠO VÀ HIỂN THỊ KEY"""
-    session_token = request.args.get("id")
+    session_token = request.args.get("s")
     
     if not session_token:
         return render_template_string(ERROR_PAGE, error_msg="Thiếu token")
