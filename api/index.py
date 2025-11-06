@@ -476,34 +476,323 @@ HUONG_DAN_HTML = """
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hướng Dẫn - ARES Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng Dẫn Cài Đặt - ARES Tool V23</title>
     <style>
-        body { font-family: Arial; background: #0a0e27; color: #fff; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { color: #00ff9d; text-align: center; }
-        .code-block { background: #1e293b; padding: 15px; border-radius: 8px; margin: 15px 0; overflow-x: auto; }
-        code { color: #00ff9d; }
-        .back-btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #00ff9d; color: #0a0e27; text-decoration: none; border-radius: 8px; font-weight: bold; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 157, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+        }
+        h1 {
+            color: #00ff9d;
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+        }
+        .subtitle {
+            text-align: center;
+            color: #ffc107;
+            margin-bottom: 40px;
+            font-size: 18px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            color: #00ff9d;
+            margin-bottom: 15px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .step-number {
+            background: #00ff9d;
+            color: #0a0e27;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .code-block {
+            background: #1e293b;
+            border: 2px solid #00ff9d;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+            overflow-x: auto;
+        }
+        .code-block code {
+            color: #00ff9d;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            display: block;
+            white-space: pre-wrap;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ffc107;
+            color: #0a0e27;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .copy-btn:hover {
+            background: #ffb300;
+            transform: scale(1.05);
+        }
+        .info-box {
+            background: rgba(0, 255, 157, 0.1);
+            border: 2px solid #00ff9d;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-box h3 {
+            color: #00ff9d;
+            margin-bottom: 10px;
+        }
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .warning-box h3 {
+            color: #ffc107;
+            margin-bottom: 10px;
+        }
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .back-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
+            color: #0a0e27;
+            padding: 15px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+            margin-top: 30px;
+        }
+        .back-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.5);
+        }
+        .link {
+            color: #00ff9d;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Hướng Dẫn Cài Đặt ARES Tool</h1>
-        <h2>1. Cài Termux</h2>
-        <p>Tải từ F-Droid: <a href="https://f-droid.org/en/packages/com.termux/" style="color: #00ff9d;">Link</a></p>
-        
-        <h2>2. Cài đặt</h2>
-        <div class="code-block"><code>pkg update && pkg upgrade -y</code></div>
-        <div class="code-block"><code>pkg install python git -y</code></div>
-        <div class="code-block"><code>git clone https://github.com/quocdung1303/arestool.git</code></div>
-        <div class="code-block"><code>cd arestool</code></div>
-        <div class="code-block"><code>pip install -r requirements.txt</code></div>
-        
-        <h2>3. Chạy tool</h2>
-        <div class="code-block"><code>python obf-botcucvip.py</code></div>
-        
-        <a href="/" class="back-btn">← Về Trang Chủ</a>
+        <h1>🎮 ARES TOOL V23</h1>
+        <div class="subtitle">Hướng Dẫn Cài Đặt & Sử Dụng</div>
+
+        <!-- BƯỚC 1 -->
+        <div class="section">
+            <h2><span class="step-number">1</span> Tải & Cài Đặt Termux</h2>
+            <p>⚠️ <strong>QUAN TRỌNG:</strong> Không tải Termux từ Google Play Store!</p>
+            <div class="warning-box">
+                <h3>📥 Tải Termux từ F-Droid:</h3>
+                <div class="info-item">
+                    🔗 <a href="https://f-droid.org/en/packages/com.termux/" class="link" target="_blank">
+                        https://f-droid.org/en/packages/com.termux/
+                    </a>
+                </div>
+                <div class="info-item">
+                    💡 Phiên bản Play Store không còn được cập nhật và có thể gây lỗi
+                </div>
+            </div>
+        </div>
+
+        <!-- BƯỚC 2 -->
+        <div class="section">
+            <h2><span class="step-number">2</span> Cài Đặt Môi Trường</h2>
+            <p>Mở Termux và chạy từng lệnh sau:</p>
+            
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pkg update && pkg upgrade -y')">📋 Copy</button>
+                <code>pkg update && pkg upgrade -y</code>
+            </div>
+            <div class="info-item">⏱️ Chờ 2-5 phút để cập nhật</div>
+            
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pkg install python git -y')">📋 Copy</button>
+                <code>pkg install python git -y</code>
+            </div>
+            <div class="info-item">📦 Cài đặt Python và Git</div>
+        </div>
+
+        <!-- BƯỚC 3 -->
+        <div class="section">
+            <h2><span class="step-number">3</span> Tải Tool Từ GitHub</h2>
+            
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/quocdung1303/arestool.git')">📋 Copy</button>
+                <code>git clone https://github.com/quocdung1303/arestool.git</code>
+            </div>
+            
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'cd arestool')">📋 Copy</button>
+                <code>cd arestool</code>
+            </div>
+            
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pip install -r requirements.txt')">📋 Copy</button>
+                <code>pip install -r requirements.txt</code>
+            </div>
+            <div class="info-item">⏱️ Chờ cài đặt thư viện (requests, colorama, websocket-client)</div>
+        </div>
+
+        <!-- BƯỚC 4 -->
+        <div class="section">
+            <h2><span class="step-number">4</span> Lấy License Key</h2>
+            
+            <div class="info-box">
+                <h3>🔑 Cách Lấy Key:</h3>
+                <div class="info-item">1️⃣ Vào trang chủ: <a href="/" class="link">webkeyy.vercel.app</a></div>
+                <div class="info-item">2️⃣ Click nút "Lấy Key Ngay"</div>
+                <div class="info-item">3️⃣ Hoàn thành bước xác minh Link4m</div>
+                <div class="info-item">4️⃣ Copy key hiển thị trên màn hình</div>
+                <div class="info-item">⏰ Key có hiệu lực 24 giờ</div>
+            </div>
+        </div>
+
+        <!-- BƯỚC 5 -->
+        <div class="section">
+            <h2><span class="step-number">5</span> Chạy Tool</h2>
+            
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'python obf-botcucvip.py')">📋 Copy</button>
+                <code>python obf-botcucvip.py</code>
+            </div>
+            
+            <div class="info-item">📝 Nhập license key khi được yêu cầu</div>
+            <div class="info-item">✅ Tool sẽ tự động kết nối và bắt đầu chạy</div>
+        </div>
+
+        <!-- LƯU Ý SỬ DỤNG -->
+        <div class="section">
+            <h2>💡 Lưu Ý Khi Sử Dụng</h2>
+            <div class="info-box">
+                <div class="info-item">✅ Mỗi key có hiệu lực 24 giờ kể từ khi lấy</div>
+                <div class="info-item">✅ Key hoạt động tốt nhất khi dùng trên 1 thiết bị</div>
+                <div class="info-item">✅ Hỗ trợ đổi mạng 4G/Wifi trong quá trình sử dụng</div>
+                <div class="info-item">✅ Sau 24h, quay lại trang chủ để lấy key mới</div>
+                <div class="info-item">✅ Hoàn toàn miễn phí, không giới hạn số lần lấy key</div>
+            </div>
+        </div>
+
+        <!-- XỬ LÝ LỖI -->
+        <div class="section">
+            <h2>🔧 Xử Lý Lỗi Thường Gặp</h2>
+            
+            <div class="warning-box">
+                <h3>Lỗi: "Key không hợp lệ"</h3>
+                <div class="info-item">• Kiểm tra key còn hạn không (24h kể từ khi lấy)</div>
+                <div class="info-item">• Đảm bảo copy đúng key (không thừa khoảng trắng)</div>
+                <div class="info-item">• Thử lấy key mới tại trang chủ</div>
+            </div>
+
+            <div class="warning-box">
+                <h3>Lỗi: "Key đang được sử dụng"</h3>
+                <div class="info-item">• Đóng tool trên thiết bị khác nếu đang chạy</div>
+                <div class="info-item">• Chờ vài phút rồi thử lại</div>
+                <div class="info-item">• Nếu vẫn lỗi, lấy key mới sau 24h</div>
+            </div>
+
+            <div class="warning-box">
+                <h3>Lỗi: "Quá nhiều requests"</h3>
+                <div class="info-item">• Chờ 1-2 phút rồi thử lại</div>
+                <div class="info-item">• Tránh khởi động lại tool liên tục</div>
+            </div>
+
+            <div class="warning-box">
+                <h3>Tool không kết nối được</h3>
+                <div class="info-item">• Kiểm tra kết nối mạng</div>
+                <div class="info-item">• Khởi động lại Termux</div>
+                <div class="info-item">• Cập nhật tool: <code style="color: #ffc107;">cd arestool && git pull</code></div>
+            </div>
+        </div>
+
+        <!-- MẸO -->
+        <div class="section">
+            <h2>✨ Mẹo Sử Dụng Hiệu Quả</h2>
+            <div class="info-box">
+                <div class="info-item">💡 Dùng wifi ổn định để tool chạy mượt mà hơn</div>
+                <div class="info-item">💡 Lấy key vào đầu ngày để có thời gian sử dụng tối đa</div>
+                <div class="info-item">💡 Không tắt Termux khi tool đang chạy</div>
+                <div class="info-item">💡 Bookmark trang chủ để lấy key nhanh hơn</div>
+            </div>
+        </div>
+
+        <!-- LIÊN HỆ -->
+        <div class="section">
+            <h2>📞 Hỗ Trợ</h2>
+            <div class="info-item">💬 Nếu cần hỗ trợ, liên hệ admin qua Telegram/Discord</div>
+            <div class="info-item">📖 GitHub: <a href="https://github.com/quocdung1303/arestool" class="link" target="_blank">github.com/quocdung1303/arestool</a></div>
+            <div class="info-item">🌟 Nhớ star repo nếu thấy tool hữu ích!</div>
+        </div>
+
+        <center>
+            <a href="/" class="back-btn">← Về Trang Chủ Lấy Key</a>
+        </center>
     </div>
+
+    <script>
+        function copyCode(btn, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Đã copy!';
+                btn.style.background = '#00ff9d';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#ffc107';
+                }, 2000);
+            }).catch(() => {
+                alert('Vui lòng copy thủ công: ' + text);
+            });
+        }
+    </script>
 </body>
 </html>
 """
