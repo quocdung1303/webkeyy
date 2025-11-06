@@ -94,11 +94,7 @@ def get_client_ip():
 @app.route("/")
 def index():
     """Trang chủ lấy key"""
-    try:
-        with open('folder/index.html', 'r', encoding='utf-8') as f:
-            return f.read()
-    except:
-        return "Error loading page", 500
+    return render_template_string(INDEX_HTML)500
 
 @app.route("/api/get_link")
 def get_link():
