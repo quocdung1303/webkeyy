@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔑 Hệ thống Key</title>
+    <title>ARES - Hệ Thống Key</title>
     <style>
         * {
             margin: 0;
@@ -12,149 +12,221 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0e1a;
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
+            color: #fff;
         }
 
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 100%;
-        }
-
-        h1 {
-            color: #333;
+        .header {
             text-align: center;
+            margin-bottom: 30px;
+            padding-top: 20px;
+        }
+
+        .logo {
+            font-size: 72px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #00ff9d;
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+            font-family: 'Courier New', monospace;
             margin-bottom: 10px;
-            font-size: 28px;
         }
 
         .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
+            color: #ffc107;
             font-size: 14px;
-        }
-
-        .step {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
             margin-bottom: 20px;
-            border-left: 4px solid #667eea;
         }
 
-        .step-title {
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 16px;
+        .main-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 20px 0 10px 0;
         }
 
-        .step-content {
-            color: #555;
+        .description {
+            color: #a0aec0;
             font-size: 14px;
             line-height: 1.6;
         }
 
-        .btn {
-            width: 100%;
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .status-badge {
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid #00ff9d;
+            color: #00ff9d;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.05) 0%, rgba(0, 180, 140, 0.05) 100%);
+            border: 2px solid rgba(0, 255, 157, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 20px auto;
+            max-width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00ff9d, #00b48c, #00ff9d);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .step-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #0a0e1a;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .card-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .card-text {
+            color: #a0aec0;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
             padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-        }
-
-        .btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .link-display {
-            background: #e3f2fd;
-            padding: 20px;
-            border-radius: 10px;
             margin: 15px 0;
-            display: none;
-            border: 2px solid #2196F3;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
         }
 
-        .link-display.show {
+        .warning-box-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .warning-box-text {
+            color: #ffc107;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .timer-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .timer-box.show {
             display: block;
         }
 
-        .link-url {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 25px;
-            border-radius: 25px;
-            text-decoration: none;
-            margin: 10px 0;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-
-        .link-url:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .timer {
-            background: #fff3cd;
-            border: 2px solid #ff9800;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: center;
-        }
-
-        .timer-title {
-            color: #ff6b00;
-            font-weight: bold;
+        .timer-label {
+            color: #ffc107;
             font-size: 14px;
             margin-bottom: 10px;
         }
 
         .timer-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #ff6b00;
+            font-size: 48px;
+            font-weight: 900;
+            color: #ffc107;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: #ffc107;
+            color: #0a0e1a;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #ffcd38;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-success {
+            background: #00ff9d;
+            color: #0a0e1a;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #00ffaa;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 157, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
 
         .key-display {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 15px 0;
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.1) 0%, rgba(0, 180, 140, 0.1) 100%);
+            border: 2px solid #00ff9d;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
             text-align: center;
             display: none;
         }
@@ -163,20 +235,40 @@
             display: block;
         }
 
+        .key-label {
+            color: #00ff9d;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
         .key-value {
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-top: 10px;
-            word-break: break-all;
-            background: rgba(255,255,255,0.2);
-            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 157, 0.3);
             border-radius: 8px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #00ff9d;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .key-value:hover {
+            background: rgba(0, 255, 157, 0.1);
+        }
+
+        .key-expire {
+            color: #a0aec0;
+            font-size: 13px;
+            margin-top: 10px;
         }
 
         .message {
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin: 15px 0;
             font-size: 14px;
             display: none;
@@ -186,29 +278,28 @@
             display: block;
         }
 
-        .message.error {
-            background: #fee;
-            color: #c33;
-            border-left: 4px solid #c33;
+        .message.success {
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid #00ff9d;
+            color: #00ff9d;
         }
 
-        .message.success {
-            background: #efe;
-            color: #3c3;
-            border-left: 4px solid #3c3;
+        .message.error {
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid #ff4d4d;
+            color: #ff4d4d;
         }
 
         .message.info {
-            background: #eef;
-            color: #33c;
-            border-left: 4px solid #33c;
+            background: rgba(100, 200, 255, 0.1);
+            border: 1px solid #64c8ff;
+            color: #64c8ff;
         }
 
         .loading {
             display: none;
             text-align: center;
-            color: #667eea;
-            margin: 10px 0;
+            padding: 20px;
         }
 
         .loading.show {
@@ -216,13 +307,13 @@
         }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 3px solid rgba(0, 255, 157, 0.1);
+            border-top: 3px solid #00ff9d;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
@@ -232,77 +323,101 @@
 
         .footer {
             text-align: center;
-            margin-top: 20px;
-            color: #888;
+            margin-top: 30px;
+            color: #4a5568;
             font-size: 12px;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔑 Hệ thống Key</h1>
-        <p class="subtitle">Vượt link để nhận key miễn phí</p>
+    <div class="header">
+        <div class="logo">ARES</div>
+        <div class="subtitle">POWERED BY ARES TOOL V27</div>
+        <div class="main-title">Hệ Thống Quản Lý Key ARES</div>
+        <div class="description">Nhận key miễn phí với hiệu lực 24 giờ để sử dụng ARES Tool</div>
+        
+        <div class="status-bar">
+            <div class="status-badge">✓ Hệ thống hoạt động</div>
+            <div class="status-badge" id="activeKeys">1 key đang hoạt động</div>
+        </div>
+    </div>
 
-        <div class="step">
-            <div class="step-title">📋 Hướng dẫn:</div>
-            <div class="step-content">
-                1. Nhấn "Lấy Link" để nhận link rút gọn<br>
-                2. Nhấn vào link và vượt qua trang quảng cáo<br>
-                3. Đợi đủ 15 giây (có đồng hồ đếm ngược)<br>
-                4. Nhấn "Lấy Key" để nhận key riêng của bạn<br>
-                5. Key có hiệu lực 24 giờ
+    <div class="message" id="message"></div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p style="color: #00ff9d;">Đang xử lý...</p>
+    </div>
+
+    <!-- Card Bước 1: Vượt Link -->
+    <div class="card" id="step1Card">
+        <div class="step-badge">Bước 1</div>
+        <div class="card-icon">🔗</div>
+        <div class="card-title">Vượt Link Quảng Cáo</div>
+        <div class="card-text">
+            Click vào nút bên dưới để vượt link Link4m. Đây là cách để hỗ trợ duy trì tool miễn phí.
+        </div>
+        
+        <div class="warning-box">
+            <div class="warning-box-icon">⏱</div>
+            <div class="warning-box-text">
+                Vui lòng hoàn thành bước vượt quảng cáo trước khi nhận key
             </div>
         </div>
 
-        <div class="message" id="message"></div>
+        <a href="#" id="shortLink" target="_blank" style="text-decoration: none;">
+            <button class="btn btn-primary" id="linkButton" disabled>
+                <span>↗</span>
+                <span>Vượt Link Link4m</span>
+            </button>
+        </a>
 
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Đang xử lý...</p>
+        <div class="timer-box" id="timerBox">
+            <div class="timer-label">⏱ Thời gian chờ</div>
+            <div class="timer-value" id="timerValue">15</div>
+            <div style="color: #a0aec0; font-size: 13px; margin-top: 5px;">giây</div>
+        </div>
+    </div>
+
+    <!-- Card Bước 2: Nhận Key -->
+    <div class="card" id="step2Card">
+        <div class="step-badge">Bước 2</div>
+        <div class="card-icon">🔑</div>
+        <div class="card-title">Nhận Key Tự Động</div>
+        <div class="card-text">
+            Sau khi vượt link thành công, hệ thống sẽ tự động tạo key cho bạn. Key có hiệu lực 24 giờ.
         </div>
 
-        <div class="link-display" id="linkDisplay">
-            <div style="text-align: center; margin-bottom: 15px;">
-                <span style="font-size: 30px;">✅</span><br>
-                <strong style="color: #2196F3; font-size: 16px;">Link sẵn sàng!</strong>
+        <div class="warning-box" id="waitingWarning">
+            <div class="warning-box-icon">ℹ</div>
+            <div class="warning-box-text">
+                Key sẽ xuất hiện ở đây sau khi bạn hoàn thành bước 1
             </div>
-            
-            <div style="text-align: center;">
-                <a href="#" id="shortLink" target="_blank" class="link-url">
-                    🔗 Nhấn vào đây để vượt link
-                </a>
-            </div>
-
-            <div class="timer" id="timerBox" style="display:none;">
-                <div class="timer-title">⏰ Vui lòng đợi:</div>
-                <div class="timer-value" id="timerValue">15</div>
-                <div style="font-size: 12px; margin-top: 5px; color: #856404;">
-                    giây nữa để lấy key
-                </div>
-            </div>
-
-            <p style="text-align: center; color: #666; font-size: 14px; margin-top: 15px;">
-                💡 Sau khi vượt link xong, đợi đồng hồ về 0 rồi nhấn "Lấy Key"
-            </p>
         </div>
 
         <div class="key-display" id="keyDisplay">
-            <p style="font-size: 18px; margin-bottom: 5px;">🎉 Key của bạn:</p>
-            <div class="key-value" id="keyValue"></div>
-            <p style="font-size: 12px; margin-top: 10px; opacity: 0.9;" id="keyExpire"></p>
+            <div class="key-label">🎉 Key của bạn:</div>
+            <div class="key-value" id="keyValue" onclick="copyKey()">-</div>
+            <div class="key-expire" id="keyExpire">Hết hạn: -</div>
         </div>
-
-        <button class="btn btn-primary" id="getLinkBtn" onclick="getLink()">
-            📎 Lấy Link
-        </button>
 
         <button class="btn btn-success" id="getKeyBtn" onclick="getKey()" disabled>
-            🔑 Lấy Key
+            <span>🔑</span>
+            <span>Lấy Key</span>
         </button>
+    </div>
 
-        <div class="footer">
-            Key riêng cho từng người • Hiệu lực 24 giờ
-        </div>
+    <button class="btn btn-primary" id="getLinkBtn" onclick="getLink()" style="max-width: 500px; margin: 20px auto;">
+        <span>🚀</span>
+        <span>Bắt Đầu Lấy Key</span>
+    </button>
+
+    <div class="footer">
+        Key riêng cho từng người • Hiệu lực 24 giờ • ARES Tool V27
     </div>
 
     <script>
@@ -324,11 +439,10 @@
 
         function startCountdown(seconds) {
             let remaining = seconds;
-            document.getElementById('timerBox').style.display = 'block';
+            document.getElementById('timerBox').classList.add('show');
             document.getElementById('timerValue').textContent = remaining;
             document.getElementById('getKeyBtn').disabled = true;
 
-            // Clear interval cũ nếu có
             if (countdownInterval) {
                 clearInterval(countdownInterval);
             }
@@ -339,9 +453,9 @@
 
                 if (remaining <= 0) {
                     clearInterval(countdownInterval);
-                    document.getElementById('timerBox').style.display = 'none';
+                    document.getElementById('timerBox').classList.remove('show');
                     document.getElementById('getKeyBtn').disabled = false;
-                    showMessage('✅ Đã đủ thời gian! Bạn có thể nhấn "Lấy Key" bây giờ.', 'success');
+                    showMessage('✅ Đã đủ thời gian! Nhấn "Lấy Key" để nhận key.', 'success');
                 }
             }, 1000);
         }
@@ -359,14 +473,13 @@
                     localStorage.setItem('sessionToken', sessionToken);
                     
                     document.getElementById('shortLink').href = data.url;
-                    document.getElementById('linkDisplay').classList.add('show');
+                    document.getElementById('linkButton').disabled = false;
                     
-                    showMessage('✅ Link sẵn sàng! Hãy vượt link và đợi 15 giây.', 'success');
+                    showMessage('✅ Link sẵn sàng! Nhấn "Vượt Link Link4m" và đợi 15 giây.', 'success');
                     
-                    // Bắt đầu đếm ngược 15 giây
                     startCountdown(15);
                     
-                    document.getElementById('linkDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
                     showMessage('❌ ' + data.msg, 'error');
                     document.getElementById('getLinkBtn').disabled = false;
@@ -396,13 +509,14 @@
                     document.getElementById('keyValue').textContent = data.key;
                     document.getElementById('keyExpire').textContent = 'Hết hạn: ' + data.expire_at;
                     document.getElementById('keyDisplay').classList.add('show');
+                    document.getElementById('waitingWarning').style.display = 'none';
+                    
                     showMessage('🎉 Lấy key thành công!', 'success');
                     
-                    // Auto copy
                     try {
-                        navigator.clipboard.writeText(data.key);
+                        await navigator.clipboard.writeText(data.key);
                         setTimeout(() => {
-                            showMessage('📋 Key đã được copy vào clipboard!', 'info');
+                            showMessage('📋 Key đã được copy tự động!', 'info');
                         }, 1000);
                     } catch (e) {}
                     
@@ -419,11 +533,20 @@
             }
         }
 
-        // Khôi phục countdown nếu refresh trang
+        async function copyKey() {
+            const keyText = document.getElementById('keyValue').textContent;
+            try {
+                await navigator.clipboard.writeText(keyText);
+                showMessage('📋 Đã copy key!', 'success');
+            } catch (e) {
+                showMessage('❌ Không thể copy. Hãy copy thủ công.', 'error');
+            }
+        }
+
         if (sessionToken) {
             document.getElementById('getKeyBtn').disabled = false;
             showMessage('💡 Bạn đã lấy link trước đó. Nếu đủ 15 giây, hãy nhấn "Lấy Key"', 'info');
         }
     </script>
 </body>
-    </html>
+            </html>
