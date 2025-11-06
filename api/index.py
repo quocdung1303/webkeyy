@@ -465,3 +465,498 @@ ERROR_PAGE = """
 </body>
 </html>
 """
+
+@app.route("/huong-dan")
+def huong_dan():
+    """Trang hướng dẫn cài đặt tool - ARES Theme"""
+    return render_template_string(HUONG_DAN_HTML)
+
+# HTML TEMPLATE CHO TRANG HƯỚNG DẪN
+HUONG_DAN_HTML = """
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng Dẫn - ARES Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding-top: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 72px;
+            font-weight: bold;
+            color: #00ff9d;
+            text-shadow: 0 0 30px rgba(0, 255, 157, 0.5);
+            letter-spacing: 8px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #ffc107;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .content-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 157, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #00ff9d;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2:first-child {
+            margin-top: 0;
+        }
+
+        .step-number {
+            background: #00ff9d;
+            color: #0a0e27;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        p, li {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .intro-text {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.8;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(0, 255, 157, 0.1);
+            border-left: 4px solid #00ff9d;
+            border-radius: 8px;
+        }
+
+        .code-block {
+            position: relative;
+            background: #1e293b;
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            color: #e2e8f0;
+            padding: 20px;
+            padding-right: 80px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            overflow-x: auto;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.1);
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #00ff9d;
+            color: #0a0e27;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #00cc7d;
+            transform: scale(1.05);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .error-box {
+            background: rgba(255, 68, 68, 0.1);
+            border: 2px solid #ff4444;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .error-title {
+            color: #ff4444;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-text {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .solution {
+            color: #ffc107;
+            font-weight: 600;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .link {
+            color: #00ff9d;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: border-color 0.3s;
+        }
+
+        .link:hover {
+            border-bottom-color: #00ff9d;
+        }
+
+        ol {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+
+        ol li {
+            margin-bottom: 12px;
+            padding-left: 5px;
+        }
+
+        .highlight-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .highlight-box h3 {
+            color: #ffc107;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .note-list {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .note-list li {
+            padding-left: 30px;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .note-list li:before {
+            content: "•";
+            color: #ffc107;
+            font-size: 24px;
+            position: absolute;
+            left: 0;
+            top: -3px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
+            color: #0a0e27;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.4);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #00ff9d;
+            color: #0a0e27;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-weight: 700;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 255, 157, 0.4);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff9d, transparent);
+            margin: 40px 0;
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 48px;
+            }
+            .subtitle {
+                font-size: 16px;
+            }
+            .content-box {
+                padding: 25px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+            .code-block {
+                font-size: 13px;
+                padding-right: 20px;
+            }
+            .copy-btn {
+                position: static;
+                display: block;
+                width: 100%;
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">ARES</div>
+            <div class="subtitle">HƯỚNG DẪN CÀI ĐẶT VÀ SỬ DỤNG TOOL</div>
+            <div class="description">
+                Hướng dẫn chi tiết cách cài đặt và chạy ARES Tool trên Android (Termux)
+            </div>
+        </div>
+
+        <div class="content-box">
+            <div class="intro-text">
+                💡 <strong>Lưu ý:</strong> ARES Tool yêu cầu license key miễn phí để sử dụng. 
+                Key có hiệu lực 24 giờ và chỉ hoạt động trên thiết bị đã lấy key.
+            </div>
+
+            <h2><span class="step-number">1</span> Giới thiệu</h2>
+            <p>
+                ARES Tool là công cụ tự động hóa với hệ thống key bảo mật. Termux là trình giả lập 
+                terminal cho Android, cho phép bạn chạy các lệnh Linux trên điện thoại.
+            </p>
+
+            <div class="divider"></div>
+
+            <h2><span class="step-number">2</span> Cài đặt Termux</h2>
+            <p>
+                Tải Termux từ <strong>F-Droid</strong> (không dùng Google Play Store vì đã lỗi thời):
+            </p>
+            <p>
+                <a href="https://f-droid.org/en/packages/com.termux/" class="link" target="_blank">
+                    → Tải Termux từ F-Droid
+                </a>
+            </p>
+
+            <div class="divider"></div>
+
+            <h2><span class="step-number">3</span> Cập nhật hệ thống</h2>
+            <p>Mở Termux và chạy lệnh:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pkg update && pkg upgrade -y')">Copy</button>
+                <code>pkg update && pkg upgrade -y</code>
+            </div>
+
+            <h2><span class="step-number">4</span> Cài đặt Python và Git</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pkg install python git -y')">Copy</button>
+                <code>pkg install python git -y</code>
+            </div>
+
+            <h2><span class="step-number">5</span> Tải tool từ GitHub</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/quocdung1303/arestool.git')">Copy</button>
+                <code>git clone https://github.com/quocdung1303/arestool.git</code>
+            </div>
+
+            <h2><span class="step-number">6</span> Vào thư mục tool</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'cd arestool')">Copy</button>
+                <code>cd arestool</code>
+            </div>
+
+            <h2><span class="step-number">7</span> Cài đặt thư viện</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pip install -r requirements.txt')">Copy</button>
+                <code>pip install -r requirements.txt</code>
+            </div>
+
+            <div class="divider"></div>
+
+            <h2><span class="step-number">8</span> Lấy License Key</h2>
+            <div class="highlight-box">
+                <h3>🔑 Hướng dẫn lấy key:</h3>
+                <ol>
+                    <li>Truy cập: <a href="https://webkeyy.vercel.app" class="link" target="_blank">https://webkeyy.vercel.app</a></li>
+                    <li>Click nút <strong>"Lấy Key Ngay"</strong></li>
+                    <li>Vượt link quảng cáo Link4m</li>
+                    <li>Sau khi vượt xong → Tự động hiển thị key</li>
+                    <li>Copy key để sử dụng</li>
+                </ol>
+            </div>
+
+            <div class="divider"></div>
+
+            <h2><span class="step-number">9</span> Chạy tool</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'python obf-botcucvip.py')">Copy</button>
+                <code>python obf-botcucvip.py</code>
+            </div>
+            <p>Tool sẽ yêu cầu nhập license key. Paste key đã lấy ở bước 8.</p>
+
+            <div class="divider"></div>
+
+            <h2>⚠️ Lỗi thường gặp</h2>
+
+            <div class="error-box">
+                <div class="error-title">❌ Lỗi: command not found: git</div>
+                <div class="error-text">
+                    Git chưa được cài đặt trong Termux.
+                </div>
+                <div class="solution">✅ Cách khắc phục:</div>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this, 'pkg install git -y')">Copy</button>
+                    <code>pkg install git -y</code>
+                </div>
+            </div>
+
+            <div class="error-box">
+                <div class="error-title">❌ Lỗi: No module named 'requests'</div>
+                <div class="error-text">
+                    Thư viện chưa được cài đặt đầy đủ.
+                </div>
+                <div class="solution">✅ Cách khắc phục:</div>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this, 'pip install requests colorama websocket-client')">Copy</button>
+                    <code>pip install requests colorama websocket-client</code>
+                </div>
+            </div>
+
+            <div class="error-box">
+                <div class="error-title">❌ Lỗi: License key không hợp lệ</div>
+                <div class="error-text">
+                    Key đã hết hạn (quá 24 giờ) hoặc đang được sử dụng trên thiết bị khác.
+                </div>
+                <div class="solution">✅ Cách khắc phục:</div>
+                <div class="error-text">
+                    Lấy key mới tại <a href="https://webkeyy.vercel.app" class="link" target="_blank">webkeyy.vercel.app</a>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="highlight-box">
+                <h3>📌 Lưu ý quan trọng:</h3>
+                <ul class="note-list">
+                    <li>Key có hiệu lực <strong>24 giờ</strong></li>
+                    <li>Key chỉ hoạt động trên <strong>thiết bị đã lấy</strong></li>
+                    <li><strong>Không chia sẻ</strong> key cho người khác</li>
+                    <li>Lấy key mới mỗi 24 giờ tại <a href="https://webkeyy.vercel.app" class="link">webkeyy.vercel.app</a></li>
+                </ul>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="/" class="back-btn">← Về Trang Chủ Lấy Key</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✅ Đã copy vào clipboard!</div>
+
+    <script>
+        function copyCode(button, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+                button.textContent = 'Copied!';
+                button.style.background = '#ffc107';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.style.background = '#00ff9d';
+                }, 2000);
+            }).catch(() => {
+                alert('Không thể copy. Vui lòng copy thủ công.');
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+"""
