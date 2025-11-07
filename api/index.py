@@ -190,85 +190,77 @@ def get_key_page(session_token):
 
 @app.route("/api/check_key")
 def check_key():
-    """Kiểm tra key có hợp lệ không - CHO TOOL SỬ DỤNG"""
-    key = request.args.get("key")
+   @app.route("/api/get_key_by_token")
+def get_key_by_token():
+    """
+    API cho TOOL - Lấy key bằng token
+    Tool polling API này để tự động nhận key sau khi user vượt link
+    """
+    session_token = request.args.get("token")
     
-    if not key:
-        return jsonify({"status": "fail", "msg": "Thiếu key"})
+    if not session_token:
+        return jsonify({"status": "error", "msg": "Thiếu token"})
     
     current_ip = request.remote_addr
     
-    # Rate limiting - IP Level
-    ip_allowed, _ = check_rate_limit(f"ip:{current_ip}", max_requests=20, time_window=60)
+    # Rate limiting - IP Level (cho phép nhiều hơn vì tool sẽ polling)
+    ip_allowed, _ = check_rate_limit(f"ip:{current_ip}", max_requests=30, time_window=60)
     if not ip_allowed:
-        print(f"[RATE_LIMIT] IP {current_ip} vượt quá 20 req/phút")
-        return jsonify({"status": "fail", "msg": "Quá nhiều requests từ IP của bạn. Vui lòng chờ 1 phút."})
-    
-    # Rate limiting - Key Level
-    key_allowed, _ = check_rate_limit(f"key:{key}", max_requests=10, time_window=60)
-    if not key_allowed:
-        print(f"[RATE_LIMIT] Key {key[:8]}... vượt quá 10 req/phút")
-        return jsonify({"status": "fail", "msg": "Key đang được check quá nhiều lần. Vui lòng chờ."})
+        return jsonify({"status": "error", "msg": "Quá nhiều requests. Vui lòng chờ."})
     
     data = load_data()
+    
+    if session_token not in data.get("sessions", {}):
+        return jsonify({"status": "error", "msg": "Token không tồn tại hoặc đã hết hạn"})
+    
+    session = data["sessions"][session_token]
     current_time = time.time()
+    created_at = session.get("created_at", 0)
     
-    for session_token, session_data in data.get("sessions", {}).items():
-        if session_data.get("unique_key") == key:
-            created_at = session_data.get("created_at", 0)
-            
-            # Kiểm tra hết hạn
-            if current_time - created_at > 86400:
-                del data["sessions"][session_token]
-                save_data(data)
-                return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
-            
-            # KIỂM TRA ĐÃ VERIFY CHƯA
-            if not session_data.get("verified"):
-                return jsonify({
-                    "status": "fail",
-                    "msg": "Key chưa được kích hoạt. Vui lòng vượt link Link4m trước."
-                })
-            
-            # IP TRACKING
-            ip_list = session_data.get("ip_list", [session_data.get("owner_ip")])
-            max_ips = session_data.get("max_ips", 3)
-            
-            if current_ip not in ip_list:
-                if len(ip_list) >= max_ips:
-                    print(f"[IP_LIMIT] Key {key[:8]}... đã đủ {max_ips} IP | Current: {current_ip}")
-                    return jsonify({
-                        "status": "fail",
-                        "msg": f"Key đang được sử dụng trên thiết bị khác. Vui lòng lấy key mới."
-                    })
-                else:
-                    ip_list.append(current_ip)
-                    session_data["ip_list"] = ip_list
-                    data["sessions"][session_token] = session_data
-                    save_data(data)
-                    print(f"[IP_ADD] Key {key[:8]}... thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
-            
-            # Update check count
-            session_data["check_count"] = session_data.get("check_count", 0) + 1
-            session_data["last_check"] = current_time
-            data["sessions"][session_token] = session_data
-            save_data(data)
-            
-            # Key hợp lệ
-            expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
-            
-            print(f"[OK] Key {key[:8]}... | IP: {current_ip} | Checks: {session_data['check_count']} | IPs: {len(ip_list)}/{max_ips}")
-            
+    # Kiểm tra hết hạn
+    if current_time - created_at > 86400:
+        del data["sessions"][session_token]
+        save_data(data)
+        return jsonify({"status": "error", "msg": "Token đã hết hạn (quá 24 giờ)"})
+    
+    # ✅ KIỂM TRA ĐÃ VERIFY CHƯA
+    if not session.get("verified"):
+        return jsonify({
+            "status": "waiting",
+            "msg": "Vui lòng vượt link Link4m. Tool sẽ tự động nhận key sau khi bạn vượt xong."
+        })
+    
+    # ✅ IP TRACKING
+    ip_list = session.get("ip_list", [session.get("owner_ip")])
+    max_ips = session.get("max_ips", 3)
+    
+    if current_ip not in ip_list:
+        if len(ip_list) >= max_ips:
+            print(f"[IP_LIMIT] Token {session_token[:8]}... đã đủ {max_ips} IP | Current: {current_ip}")
             return jsonify({
-                "status": "ok",
-                "msg": "Key hợp lệ",
-                "expire_at": expire_at,
-                "is_unique": True,
-                "ips_used": len(ip_list),
-                "max_ips": max_ips
+                "status": "error",
+                "msg": f"Key đã được sử dụng trên {max_ips} thiết bị khác."
             })
+        else:
+            ip_list.append(current_ip)
+            session["ip_list"] = ip_list
+            data["sessions"][session_token] = session
+            save_data(data)
+            print(f"[IP_ADD] Token {session_token[:8]}... thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
     
-    return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
+    # Đã verify → Trả key
+    unique_key = session.get("unique_key")
+    expire_time = created_at + 86400
+    expire_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time))
+    
+    print(f"[GET_KEY_BY_TOKEN] Token: {session_token[:8]}... | Key: {unique_key[:8]}... | IP: {current_ip}")
+    
+    return jsonify({
+        "status": "ok",
+        "key": unique_key,
+        "expire_at": expire_str,
+        "msg": "Key đã sẵn sàng!"
+    })
 
 @app.route("/huong-dan")
 def huong_dan():
