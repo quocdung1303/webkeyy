@@ -82,12 +82,12 @@ def auto_cleanup():
 
 @app.route("/")
 def home():
-    """Trang chủ"""
-    return render_template_string(INDEX_HTML)
+    """Trang chủ - Chỉ hướng dẫn sử dụng tool"""
+    return render_template_string(HOME_HTML)
 
 @app.route("/api/get_link")
 def get_link():
-    """Tạo link rút gọn Link4m"""
+    """API cho TOOL - Tạo link rút gọn Link4m"""
     if not LINK4M_KEY:
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
@@ -96,7 +96,7 @@ def get_link():
     user_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
-    # URL đích - Route ngắn gọn
+    # URL đích - Route hiển thị key
     destination_url = f"https://reskey.vercel.app/k/{session_token}"
     
     try:
@@ -108,7 +108,7 @@ def get_link():
         response = requests.get(api_url, timeout=10)
         short_url = response.text.strip()
         
-        # Lưu session với KEY ĐÃ TẠO SẴN
+        # Lưu session
         data = load_data()
         data["sessions"][session_token] = {
             "unique_key": unique_key,
@@ -138,8 +138,7 @@ def get_link():
 @app.route("/k/<session_token>")
 def get_key_page(session_token):
     """
-    Route hiển thị key - CHỈ TRUY CẬP SAU KHI VƯỢT LINK4M
-    Đơn giản: Vào là hiển thị key luôn!
+    WEB HIỂN THỊ KEY - User vào sau khi vượt Link4m
     """
     current_ip = request.remote_addr
     data = load_data()
@@ -157,25 +156,25 @@ def get_key_page(session_token):
         save_data(data)
         return render_template_string(ERROR_PAGE, error_msg="Session đã hết hạn (quá 24 giờ)")
     
-    # ===== IP TRACKING =====
+    # IP TRACKING
     ip_list = session.get("ip_list", [session.get("owner_ip")])
     max_ips = session.get("max_ips", 3)
     
     if current_ip not in ip_list:
         if len(ip_list) >= max_ips:
             return render_template_string(ERROR_PAGE, 
-                error_msg=f"Key này đang được sử dụng trên {max_ips} thiết bị khác. Vui lòng lấy key mới tại trang chủ.")
+                error_msg=f"Key này đang được sử dụng trên {max_ips} thiết bị khác.")
         else:
             ip_list.append(current_ip)
             session["ip_list"] = ip_list
             print(f"[IP_ADD] Token: {session_token[:8]}... | Thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
     
-    # ===== SET VERIFIED =====
+    # SET VERIFIED
     session["verified"] = True
     data["sessions"][session_token] = session
     save_data(data)
     
-    print(f"[KEY_PAGE] Token: {session_token[:8]}... | IP: {current_ip} | IPs: {len(ip_list)}/{max_ips}")
+    print(f"[KEY_PAGE] Token: {session_token[:8]}... | IP: {current_ip}")
     
     # Hiển thị key
     unique_key = session.get("unique_key")
@@ -188,14 +187,9 @@ def get_key_page(session_token):
         ips_used=len(ip_list),
         max_ips=max_ips)
 
-@app.route("/api/check_key")
-def check_key():
-   @app.route("/api/get_key_by_token")
+@app.route("/api/get_key_by_token")
 def get_key_by_token():
-    """
-    API cho TOOL - Lấy key bằng token
-    Tool polling API này để tự động nhận key sau khi user vượt link
-    """
+    """API cho TOOL - Lấy key bằng token (polling)"""
     session_token = request.args.get("token")
     
     if not session_token:
@@ -203,15 +197,15 @@ def get_key_by_token():
     
     current_ip = request.remote_addr
     
-    # Rate limiting - IP Level (cho phép nhiều hơn vì tool sẽ polling)
+    # Rate limiting
     ip_allowed, _ = check_rate_limit(f"ip:{current_ip}", max_requests=30, time_window=60)
     if not ip_allowed:
-        return jsonify({"status": "error", "msg": "Quá nhiều requests. Vui lòng chờ."})
+        return jsonify({"status": "error", "msg": "Quá nhiều requests."})
     
     data = load_data()
     
     if session_token not in data.get("sessions", {}):
-        return jsonify({"status": "error", "msg": "Token không tồn tại hoặc đã hết hạn"})
+        return jsonify({"status": "error", "msg": "Token không tồn tại"})
     
     session = data["sessions"][session_token]
     current_time = time.time()
@@ -221,22 +215,21 @@ def get_key_by_token():
     if current_time - created_at > 86400:
         del data["sessions"][session_token]
         save_data(data)
-        return jsonify({"status": "error", "msg": "Token đã hết hạn (quá 24 giờ)"})
+        return jsonify({"status": "error", "msg": "Token đã hết hạn"})
     
-    # ✅ KIỂM TRA ĐÃ VERIFY CHƯA
+    # Kiểm tra verified
     if not session.get("verified"):
         return jsonify({
             "status": "waiting",
-            "msg": "Vui lòng vượt link Link4m. Tool sẽ tự động nhận key sau khi bạn vượt xong."
+            "msg": "Vui lòng vượt link. Tool sẽ tự động nhận key."
         })
     
-    # ✅ IP TRACKING
+    # IP tracking
     ip_list = session.get("ip_list", [session.get("owner_ip")])
     max_ips = session.get("max_ips", 3)
     
     if current_ip not in ip_list:
         if len(ip_list) >= max_ips:
-            print(f"[IP_LIMIT] Token {session_token[:8]}... đã đủ {max_ips} IP | Current: {current_ip}")
             return jsonify({
                 "status": "error",
                 "msg": f"Key đã được sử dụng trên {max_ips} thiết bị khác."
@@ -246,14 +239,13 @@ def get_key_by_token():
             session["ip_list"] = ip_list
             data["sessions"][session_token] = session
             save_data(data)
-            print(f"[IP_ADD] Token {session_token[:8]}... thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
     
-    # Đã verify → Trả key
+    # Trả key
     unique_key = session.get("unique_key")
     expire_time = created_at + 86400
     expire_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time))
     
-    print(f"[GET_KEY_BY_TOKEN] Token: {session_token[:8]}... | Key: {unique_key[:8]}... | IP: {current_ip}")
+    print(f"[GET_KEY_BY_TOKEN] Token: {session_token[:8]}... | Key: {unique_key[:8]}...")
     
     return jsonify({
         "status": "ok",
@@ -262,20 +254,78 @@ def get_key_by_token():
         "msg": "Key đã sẵn sàng!"
     })
 
-@app.route("/huong-dan")
-def huong_dan():
-    """Trang hướng dẫn"""
-    return render_template_string(HUONG_DAN_HTML)
+@app.route("/api/check_key")
+def check_key():
+    """API cho TOOL - Check key hợp lệ"""
+    key = request.args.get("key")
+    
+    if not key:
+        return jsonify({"status": "fail", "msg": "Thiếu key"})
+    
+    current_ip = request.remote_addr
+    
+    # Rate limiting
+    ip_allowed, _ = check_rate_limit(f"ip:{current_ip}", max_requests=20, time_window=60)
+    if not ip_allowed:
+        return jsonify({"status": "fail", "msg": "Quá nhiều requests."})
+    
+    key_allowed, _ = check_rate_limit(f"key:{key}", max_requests=10, time_window=60)
+    if not key_allowed:
+        return jsonify({"status": "fail", "msg": "Key đang được check quá nhiều."})
+    
+    data = load_data()
+    current_time = time.time()
+    
+    for session_token, session_data in data.get("sessions", {}).items():
+        if session_data.get("unique_key") == key:
+            created_at = session_data.get("created_at", 0)
+            
+            if current_time - created_at > 86400:
+                del data["sessions"][session_token]
+                save_data(data)
+                return jsonify({"status": "fail", "msg": "Key đã hết hạn"})
+            
+            if not session_data.get("verified"):
+                return jsonify({"status": "fail", "msg": "Key chưa được kích hoạt"})
+            
+            # IP tracking
+            ip_list = session_data.get("ip_list", [session_data.get("owner_ip")])
+            max_ips = session_data.get("max_ips", 3)
+            
+            if current_ip not in ip_list:
+                if len(ip_list) >= max_ips:
+                    return jsonify({"status": "fail", "msg": "Key đang được sử dụng trên thiết bị khác"})
+                else:
+                    ip_list.append(current_ip)
+                    session_data["ip_list"] = ip_list
+                    data["sessions"][session_token] = session_data
+                    save_data(data)
+            
+            session_data["check_count"] = session_data.get("check_count", 0) + 1
+            data["sessions"][session_token] = session_data
+            save_data(data)
+            
+            expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
+            
+            return jsonify({
+                "status": "ok",
+                "msg": "Key hợp lệ",
+                "expire_at": expire_at,
+                "ips_used": len(ip_list),
+                "max_ips": max_ips
+            })
+    
+    return jsonify({"status": "fail", "msg": "Key không tồn tại"})
 
 # ==================== HTML TEMPLATES ====================
 
-INDEX_HTML = """
+HOME_HTML = """
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARES Tool - Hệ Thống Key</title>
+    <title>ARES Tool - License System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -283,236 +333,75 @@ INDEX_HTML = """
             background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
             color: #fff;
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
-        .container { max-width: 600px; margin: 0 auto; padding-top: 40px; }
-        .header { text-align: center; margin-bottom: 40px; }
+        .container { max-width: 700px; text-align: center; }
         .logo {
-            font-size: 64px;
+            font-size: 72px;
             font-weight: bold;
             color: #00ff9d;
-            text-shadow: 0 0 30px rgba(0, 255, 157, 0.5);
-            letter-spacing: 8px;
-            margin-bottom: 10px;
+            text-shadow: 0 0 40px rgba(0, 255, 157, 0.6);
+            letter-spacing: 10px;
+            margin-bottom: 20px;
         }
-        .subtitle { font-size: 18px; color: #ffc107; margin-bottom: 20px; }
-        .description { font-size: 16px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; }
-        .status-bar { display: flex; gap: 10px; margin-bottom: 30px; }
-        .status-item {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-        }
-        .status-icon { font-size: 24px; margin-bottom: 8px; }
-        .status-text { font-size: 14px; color: rgba(255, 255, 255, 0.8); }
-        .main-card {
+        .subtitle { font-size: 24px; color: #ffc107; margin-bottom: 40px; }
+        .info-box {
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid #00ff9d;
             border-radius: 20px;
             padding: 40px;
             margin-bottom: 30px;
-            box-shadow: 0 0 40px rgba(0, 255, 157, 0.2);
         }
-        .card-title { font-size: 28px; color: #00ff9d; margin-bottom: 15px; text-align: center; }
-        .card-description {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.8);
-            text-align: center;
-            line-height: 1.6;
-            margin-bottom: 30px;
+        h2 { color: #00ff9d; margin-bottom: 20px; }
+        p { font-size: 18px; line-height: 1.8; margin-bottom: 15px; color: rgba(255, 255, 255, 0.9); }
+        .code {
+            background: #1e293b;
+            color: #00ff9d;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
         }
-        .get-key-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
-            color: #0a0e27;
-            border: none;
-            padding: 18px;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .get-key-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 255, 157, 0.4); }
-        .get-key-btn:disabled { background: rgba(255, 255, 255, 0.2); cursor: not-allowed; transform: none; }
-        .link-box {
+        .warning {
             background: rgba(255, 193, 7, 0.1);
             border: 2px solid #ffc107;
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 20px;
-            display: none;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
         }
-        .link-box.active { display: block; animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .link-title { font-size: 20px; color: #ffc107; margin-bottom: 15px; text-align: center; }
-        .link-instruction {
-            font-size: 15px;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 20px;
-            text-align: center;
-            line-height: 1.5;
-        }
-        .link-button {
-            width: 100%;
-            background: #ffc107;
-            color: #0a0e27;
-            border: none;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            display: block;
-            text-align: center;
-        }
-        .link-button:hover { background: #ffb300; transform: scale(1.02); }
-        .info-box {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
-        }
-        .info-item { display: flex; align-items: flex-start; margin-bottom: 15px; }
-        .info-item:last-child { margin-bottom: 0; }
-        .info-icon { font-size: 20px; margin-right: 12px; flex-shrink: 0; }
-        .info-text { font-size: 15px; color: rgba(255, 255, 255, 0.8); line-height: 1.5; }
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #0a0e27;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .error-msg {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-            color: #ff4444;
-            text-align: center;
-            display: none;
-        }
-        .error-msg.active { display: block; }
-        .link { color: #00ff9d; text-decoration: none; font-weight: 600; }
-        .link:hover { text-decoration: underline; }
+        .warning h3 { color: #ffc107; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="logo">ARES</div>
-            <div class="subtitle">LICENSE KEY SYSTEM V2.0</div>
-            <div class="description">
-                Nhận key miễn phí với hiệu lực 24 giờ để sử dụng ARES Tool
-            </div>
-        </div>
-
-        <div class="status-bar">
-            <div class="status-item">
-                <div class="status-icon">✅</div>
-                <div class="status-text">Hệ thống hoạt động</div>
-            </div>
-            <div class="status-item">
-                <div class="status-icon">🔑</div>
-                <div class="status-text">Key 24 giờ</div>
-            </div>
-            <div class="status-item">
-                <div class="status-icon">🔒</div>
-                <div class="status-text">Bảo mật cao</div>
-            </div>
-        </div>
-
-        <div class="main-card">
-            <div class="card-title">🎁 Nhận Key Miễn Phí</div>
-            <div class="card-description">
-                Click vào nút bên dưới để nhận link. Sau khi vượt link quảng cáo, 
-                bạn sẽ tự động nhận được key riêng có hiệu lực 24 giờ.
-            </div>
-
-            <button class="get-key-btn" id="getKeyBtn" onclick="getLink()">
-                <span id="btnText">🔑 Lấy Key Ngay</span>
-            </button>
-
-            <div class="error-msg" id="errorMsg"></div>
-
-            <div class="link-box" id="linkBox">
-                <div class="link-title">🔗 Link Của Bạn</div>
-                <div class="link-instruction">
-                    Click vào nút bên dưới để vượt link quảng cáo Link4m. 
-                    <strong>Sau khi vượt xong, bạn sẽ tự động nhận được key!</strong>
-                </div>
-                <a class="link-button" id="link4mButton" href="#" target="_blank">
-                    ↗ Vượt Link Để Nhận Key
-                </a>
-            </div>
-        </div>
-
+        <div class="logo">ARES</div>
+        <div class="subtitle">LICENSE KEY SYSTEM V2.0</div>
+        
         <div class="info-box">
-            <div class="info-item">
-                <div class="info-icon">⏰</div>
-                <div class="info-text">
-                    Key riêng cho từng người • Hiệu lực 24 giờ
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">🔒</div>
-                <div class="info-text">
-                    Key hoạt động tốt nhất khi dùng trên 1 thiết bị. Hỗ trợ đổi mạng 4G/Wifi bình thường.
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">📖</div>
-                <div class="info-text">
-                    <a href="/huong-dan" class="link">Xem hướng dẫn cài đặt tool →</a>
-                </div>
-            </div>
+            <h2>🎮 Hệ Thống License Cho Tool</h2>
+            <p>Đây là hệ thống API cung cấp license key cho <strong>ARES Tool V23</strong>.</p>
+            <p>Web này <strong>KHÔNG CÓ</strong> giao diện lấy key trực tiếp.</p>
+        </div>
+        
+        <div class="info-box">
+            <h2>📱 Cách Sử Dụng</h2>
+            <p><strong>Bước 1:</strong> Tải và cài đặt ARES Tool trên Termux</p>
+            <div class="code">git clone https://github.com/quocdung1303/arestool.git<br>cd arestool<br>pip install -r requirements.txt</div>
+            <p><strong>Bước 2:</strong> Chạy tool</p>
+            <div class="code">python obf-botcucvip.py</div>
+            <p><strong>Bước 3:</strong> Tool sẽ tự động tạo link và hướng dẫn bạn lấy key</p>
+        </div>
+        
+        <div class="warning">
+            <h3>⚠️ Lưu Ý</h3>
+            <p>• Key có hiệu lực 24 giờ</p>
+            <p>• Hỗ trợ tối đa 3 IP (đổi mạng 4G/Wifi bình thường)</p>
+            <p>• Hoàn toàn miễn phí</p>
         </div>
     </div>
-
-    <script>
-        async function getLink() {
-            const btn = document.getElementById('getKeyBtn');
-            const btnText = document.getElementById('btnText');
-            const linkBox = document.getElementById('linkBox');
-            const link4mButton = document.getElementById('link4mButton');
-            const errorMsg = document.getElementById('errorMsg');
-
-            errorMsg.classList.remove('active');
-            btn.disabled = true;
-            btnText.innerHTML = '<span class="loading"></span> Đang tạo link...';
-
-            try {
-                const response = await fetch('/api/get_link');
-                const data = await response.json();
-
-                if (data.status === 'ok') {
-                    linkBox.classList.add('active');
-                    link4mButton.href = data.url;
-                    btnText.textContent = '✅ Đã tạo link thành công';
-                    linkBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else {
-                    throw new Error(data.msg || 'Không thể tạo link');
-                }
-            } catch (error) {
-                errorMsg.textContent = '❌ Lỗi: ' + error.message;
-                errorMsg.classList.add('active');
-                btnText.textContent = '🔑 Lấy Key Ngay';
-                btn.disabled = false;
-            }
-        }
-    </script>
 </body>
 </html>
 """
@@ -544,13 +433,8 @@ SUCCESS_PAGE = """
             padding: 40px;
             text-align: center;
             box-shadow: 0 0 40px rgba(0, 255, 157, 0.3);
-            animation: fadeIn 0.5s ease-in;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .title { font-size: 48px; color: #00ff9d; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 255, 157, 0.5); }
+        .title { font-size: 48px; color: #00ff9d; margin-bottom: 10px; }
         .subtitle { font-size: 24px; color: #ffc107; margin-bottom: 30px; }
         .key-container {
             background: rgba(0, 0, 0, 0.3);
@@ -561,7 +445,7 @@ SUCCESS_PAGE = """
         }
         .key-label { font-size: 18px; color: #00ff9d; margin-bottom: 15px; }
         .key-value {
-            font-size: 22px;
+            font-size: 20px;
             font-family: 'Courier New', monospace;
             color: #fff;
             background: rgba(0, 255, 157, 0.1);
@@ -579,46 +463,17 @@ SUCCESS_PAGE = """
             font-weight: bold;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s;
         }
-        .copy-btn:hover { background: #00cc7d; transform: scale(1.05); }
         .info {
             background: rgba(255, 193, 7, 0.1);
             border: 1px solid #ffc107;
             border-radius: 10px;
             padding: 20px;
             margin-top: 20px;
+            text-align: left;
         }
         .info-item { margin: 10px 0; font-size: 16px; }
         .info-label { color: #ffc107; font-weight: bold; }
-        .back-btn {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 12px 30px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #00ff9d;
-            border-radius: 10px;
-            color: #00ff9d;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-        .back-btn:hover { background: rgba(0, 255, 157, 0.2); }
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #00ff9d;
-            color: #0a0e27;
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-weight: bold;
-            display: none;
-            animation: slideIn 0.3s ease-in;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(400px); }
-            to { transform: translateX(0); }
-        }
     </style>
 </head>
 <body>
@@ -632,7 +487,7 @@ SUCCESS_PAGE = """
             </p>
             
             <div class="key-container">
-                <div class="key-label">🔑 KEY CỦA BẠN:</div>
+                <div class="key-label">🔑 LICENSE KEY:</div>
                 <div class="key-value" id="keyValue">{{ key }}</div>
                 <button class="copy-btn" onclick="copyKey()">📋 Copy Key</button>
             </div>
@@ -642,33 +497,21 @@ SUCCESS_PAGE = """
                     <span class="info-label">⏰ Hết hạn:</span> {{ expire_at }}
                 </div>
                 <div class="info-item">
-                    <span class="info-label">💡 Lưu ý:</span> Key hoạt động tốt nhất khi dùng trên 1 thiết bị
+                    <span class="info-label">💡 Lưu ý:</span> Key hoạt động tốt nhất trên 1 thiết bị
                 </div>
                 <div class="info-item">
                     <span class="info-label">✅ Hỗ trợ:</span> Đổi mạng 4G/Wifi bình thường
                 </div>
             </div>
-            
-            <a href="/" class="back-btn">🏠 Về Trang Chủ</a>
         </div>
     </div>
-    
-    <div class="toast" id="toast">✅ Đã copy key vào clipboard!</div>
     
     <script>
         function copyKey() {
             const keyValue = document.getElementById('keyValue').innerText;
             navigator.clipboard.writeText(keyValue).then(() => {
-                showToast();
+                alert('✅ Đã copy key vào clipboard!');
             });
-        }
-        
-        function showToast() {
-            const toast = document.getElementById('toast');
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
         }
     </script>
 </body>
@@ -705,17 +548,6 @@ ERROR_PAGE = """
         .error-icon { font-size: 64px; margin-bottom: 20px; }
         .error-title { font-size: 28px; color: #ff4444; margin-bottom: 20px; }
         .error-msg { font-size: 18px; margin-bottom: 30px; line-height: 1.6; }
-        .back-btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #00ff9d;
-            color: #0a0e27;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        .back-btn:hover { background: #00cc7d; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -723,348 +555,7 @@ ERROR_PAGE = """
         <div class="error-icon">❌</div>
         <div class="error-title">Có Lỗi Xảy Ra</div>
         <div class="error-msg">{{ error_msg }}</div>
-        <a href="/" class="back-btn">🏠 Về Trang Chủ</a>
     </div>
 </body>
 </html>
 """
-
-HUONG_DAN_HTML = """
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hướng Dẫn Cài Đặt - ARES Tool V23</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #fff;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(0, 255, 157, 0.3);
-            border-radius: 20px;
-            padding: 40px;
-        }
-        h1 {
-            color: #00ff9d;
-            text-align: center;
-            font-size: 36px;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
-        }
-        .subtitle {
-            text-align: center;
-            color: #ffc107;
-            margin-bottom: 40px;
-            font-size: 18px;
-        }
-        .section {
-            margin-bottom: 40px;
-        }
-        .section h2 {
-            color: #00ff9d;
-            margin-bottom: 15px;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .step-number {
-            background: #00ff9d;
-            color: #0a0e27;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .code-block {
-            background: #1e293b;
-            border: 2px solid #00ff9d;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-            position: relative;
-            overflow-x: auto;
-        }
-        .code-block code {
-            color: #00ff9d;
-            font-family: 'Courier New', monospace;
-            font-size: 15px;
-            display: block;
-            white-space: pre-wrap;
-        }
-        .copy-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #ffc107;
-            color: #0a0e27;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            transition: all 0.3s;
-        }
-        .copy-btn:hover {
-            background: #ffb300;
-            transform: scale(1.05);
-        }
-        .info-box {
-            background: rgba(0, 255, 157, 0.1);
-            border: 2px solid #00ff9d;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .info-box h3 {
-            color: #00ff9d;
-            margin-bottom: 10px;
-        }
-        .warning-box {
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .warning-box h3 {
-            color: #ffc107;
-            margin-bottom: 10px;
-        }
-        .info-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 10px;
-            line-height: 1.6;
-        }
-        .back-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
-            color: #0a0e27;
-            padding: 15px 40px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 16px;
-            transition: all 0.3s;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
-            margin-top: 30px;
-        }
-        .back-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.5);
-        }
-        .link {
-            color: #00ff9d;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .link:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🎮 ARES TOOL V23</h1>
-        <div class="subtitle">Hướng Dẫn Cài Đặt & Sử Dụng</div>
-
-        <div class="section">
-            <h2><span class="step-number">1</span> Tải & Cài Đặt Termux</h2>
-            <p>⚠️ <strong>QUAN TRỌNG:</strong> Không tải Termux từ Google Play Store!</p>
-            <div class="warning-box">
-                <h3>📥 Tải Termux từ F-Droid:</h3>
-                <div class="info-item">
-                    🔗 <a href="https://f-droid.org/en/packages/com.termux/" class="link" target="_blank">
-                        https://f-droid.org/en/packages/com.termux/
-                    </a>
-                </div>
-                <div class="info-item">
-                    💡 Phiên bản Play Store không còn được cập nhật
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2><span class="step-number">2</span> Cài Đặt Môi Trường</h2>
-            <p>Mở Termux và chạy từng lệnh sau:</p>
-            
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'pkg update && pkg upgrade -y')">📋 Copy</button>
-                <code>pkg update && pkg upgrade -y</code>
-            </div>
-            <div class="info-item">⏱️ Chờ 2-5 phút để cập nhật</div>
-            
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'pkg install python git -y')">📋 Copy</button>
-                <code>pkg install python git -y</code>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2><span class="step-number">3</span> Tải Tool Từ GitHub</h2>
-            
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/quocdung1303/arestool.git')">📋 Copy</button>
-                <code>git clone https://github.com/quocdung1303/arestool.git</code>
-            </div>
-            
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'cd arestool')">📋 Copy</button>
-                <code>cd arestool</code>
-            </div>
-            
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'pip install -r requirements.txt')">📋 Copy</button>
-                <code>pip install -r requirements.txt</code>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2><span class="step-number">4</span> Lấy License Key</h2>
-            
-            <div class="info-box">
-                <h3>🔑 Cách Lấy Key:</h3>
-                <div class="info-item">1️⃣ Vào trang chủ: <a href="/" class="link">Lấy key tại đây</a></div>
-                <div class="info-item">2️⃣ Click nút "Lấy Key Ngay"</div>
-                <div class="info-item">3️⃣ Hoàn thành bước xác minh Link4m</div>
-                <div class="info-item">4️⃣ Copy key hiển thị trên màn hình</div>
-                <div class="info-item">⏰ Key có hiệu lực 24 giờ</div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2><span class="step-number">5</span> Chạy Tool</h2>
-            
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'python obf-botcucvip.py')">📋 Copy</button>
-                <code>python obf-botcucvip.py</code>
-            </div>
-            
-            <div class="info-item">📝 Nhập license key khi được yêu cầu</div>
-            <div class="info-item">✅ Tool sẽ tự động kết nối và bắt đầu chạy</div>
-        </div>
-
-        <div class="section">
-            <h2>💡 Lưu Ý Khi Sử Dụng</h2>
-            <div class="info-box">
-                <div class="info-item">✅ Mỗi key có hiệu lực 24 giờ kể từ khi lấy</div>
-                <div class="info-item">✅ Key hoạt động tốt nhất khi dùng trên 1 thiết bị</div>
-                <div class="info-item">✅ Hỗ trợ đổi mạng 4G/Wifi trong quá trình sử dụng</div>
-                <div class="info-item">✅ Sau 24h, quay lại trang chủ để lấy key mới</div>
-            </div>
-        </div>
-
-        <center>
-            <a href="/" class="back-btn">← Về Trang Chủ Lấy Key</a>
-        </center>
-    </div>
-
-    <script>
-        function copyCode(btn, text) {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = btn.textContent;
-                btn.textContent = '✅ Đã copy!';
-                btn.style.background = '#00ff9d';
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = '#ffc107';
-                }, 2000);
-            }).catch(() => {
-                alert('Vui lòng copy thủ công: ' + text);
-            });
-        }
-    </script>
-</body>
-</html>
-"""
-
-# ==================== API CHO TOOL POLLING ====================
-
-@app.route("/api/get_key_by_token")
-def get_key_by_token():
-    """
-    API cho TOOL - Lấy key bằng token
-    Tool polling API này để tự động nhận key sau khi user vượt link
-    """
-    session_token = request.args.get("token")
-    
-    if not session_token:
-        return jsonify({"status": "error", "msg": "Thiếu token"})
-    
-    current_ip = request.remote_addr
-    
-    # Rate limiting - IP Level (cho phép nhiều hơn vì tool sẽ polling)
-    ip_allowed, _ = check_rate_limit(f"ip:{current_ip}", max_requests=30, time_window=60)
-    if not ip_allowed:
-        return jsonify({"status": "error", "msg": "Quá nhiều requests. Vui lòng chờ."})
-    
-    data = load_data()
-    
-    if session_token not in data.get("sessions", {}):
-        return jsonify({"status": "error", "msg": "Token không tồn tại hoặc đã hết hạn"})
-    
-    session = data["sessions"][session_token]
-    current_time = time.time()
-    created_at = session.get("created_at", 0)
-    
-    # Kiểm tra hết hạn
-    if current_time - created_at > 86400:
-        del data["sessions"][session_token]
-        save_data(data)
-        return jsonify({"status": "error", "msg": "Token đã hết hạn (quá 24 giờ)"})
-    
-    # KIỂM TRA ĐÃ VERIFY CHƯA
-    if not session.get("verified"):
-        return jsonify({
-            "status": "waiting",
-            "msg": "Vui lòng vượt link Link4m. Tool sẽ tự động nhận key sau khi bạn vượt xong."
-        })
-    
-    # IP TRACKING
-    ip_list = session.get("ip_list", [session.get("owner_ip")])
-    max_ips = session.get("max_ips", 3)
-    
-    if current_ip not in ip_list:
-        if len(ip_list) >= max_ips:
-            print(f"[IP_LIMIT] Token {session_token[:8]}... đã đủ {max_ips} IP | Current: {current_ip}")
-            return jsonify({
-                "status": "error",
-                "msg": f"Key đã được sử dụng trên {max_ips} thiết bị khác."
-            })
-        else:
-            ip_list.append(current_ip)
-            session["ip_list"] = ip_list
-            data["sessions"][session_token] = session
-            save_data(data)
-            print(f"[IP_ADD] Token {session_token[:8]}... thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
-    
-    # Đã verify → Trả key
-    unique_key = session.get("unique_key")
-    expire_time = created_at + 86400
-    expire_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time))
-    
-    print(f"[GET_KEY_BY_TOKEN] Token: {session_token[:8]}... | Key: {unique_key[:8]}... | IP: {current_ip}")
-    
-    return jsonify({
-        "status": "ok",
-        "key": unique_key,
-        "expire_at": expire_str,
-        "msg": "Key đã sẵn sàng!"
-    })
