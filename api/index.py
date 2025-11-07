@@ -1,396 +1,201 @@
-from flask import Flask, request
-import requests
-import secrets
-import string
-import time
+from flask import Flask, request, jsonify
 import json
 import os
-from datetime import datetime
+import time
+import random
+import string
+import secrets
+import requests
 
 app = Flask(__name__)
 
-LINK4M_KEY = os.environ.get('LINK4M_KEY', '6906d12068643654b40df4e9')
-DATA_FILE = '/tmp/keys.json'
+LINK4M_API = "https://link4m.co/api-shorten/v2"
+LINK4M_KEY = os.getenv("LINK4M_KEY")
 
-# ==================== HELPERS ====================
+KEY_FILE = "/tmp/key.json"
 
-def load_data():
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, 'r') as f:
-                return json.load(f)
-        except:
-            pass
-    return {"keys": {}}
+def generate_key(length=24):
+    """Tạo key ngẫu nhiên"""
+    return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
-def save_data(data):
-    try:
-        with open(DATA_FILE, 'w') as f:
-            json.dump(data, f)
-    except:
-        pass
-
-def cleanup():
-    data = load_data()
-    now = time.time()
-    expired = [k for k, v in data["keys"].items() if now - v.get("created_at", 0) > 86400]
-    for k in expired:
-        del data["keys"][k]
-    if expired:
-        save_data(data)
-
-def gen_token():
+def generate_session_token():
+    """Tạo session token"""
     return secrets.token_urlsafe(32)
 
-def gen_key():
-    return 'ARES-' + ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+def load_data():
+    """Load dữ liệu từ file"""
+    if not os.path.exists(KEY_FILE):
+        return {"sessions": {}}
+    try:
+        with open(KEY_FILE, "r") as f:
+            data = json.load(f)
+            if "sessions" not in data:
+                data["sessions"] = {}
+            return data
+    except:
+        return {"sessions": {}}
 
-# ==================== ROUTES ====================
+def save_data(data):
+    """Lưu dữ liệu vào file"""
+    with open(KEY_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def cleanup_old_sessions():
+    """Xóa session cũ hơn 24 giờ - TỰ ĐỘNG"""
+    data = load_data()
+    current_time = time.time()
+    sessions_to_delete = []
+    
+    for session_token, session_data in data.get("sessions", {}).items():
+        if current_time - session_data.get("created_at", 0) > 86400:  # 24 giờ
+            sessions_to_delete.append(session_token)
+    
+    for token in sessions_to_delete:
+        del data["sessions"][token]
+    
+    if sessions_to_delete:
+        save_data(data)
+        print(f"[CLEANUP] Đã xóa {len(sessions_to_delete)} session hết hạn")
+
+# ✅ TỰ ĐỘNG CLEANUP MỖI KHI CÓ REQUEST
+@app.before_request
+def auto_cleanup():
+    """Tự động cleanup trước mỗi request"""
+    cleanup_old_sessions()
 
 @app.route("/")
-def index():
-    cleanup()
-    return '''
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARES Tool V23 - License System</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .container { max-width: 500px; width: 100%; }
-        .banner {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 30px;
-            background: rgba(0, 255, 157, 0.1);
-            border: 2px solid #00ff9d;
-            border-radius: 15px;
-        }
-        h1 {
-            font-size: 56px;
-            color: #00ff9d;
-            text-shadow: 0 0 30px #00ff9d;
-            letter-spacing: 12px;
-        }
-        .subtitle { font-size: 13px; color: #ffc107; letter-spacing: 3px; }
-        .box {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-        }
-        h2 { color: #00ff9d; margin-bottom: 15px; }
-        p { color: #ccc; margin-bottom: 25px; }
-        .btn {
-            background: linear-gradient(135deg, #00ff9d, #00cc7a);
-            color: #0a0e27;
-            padding: 18px 50px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .info {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            border-radius: 10px;
-            padding: 25px;
-            margin-top: 25px;
-        }
-        .info h3 { color: #ffc107; margin-bottom: 15px; }
-        .info ul { list-style: none; text-align: left; }
-        .info li { padding: 10px 0; color: #ccc; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="banner">
-            <h1>ARES</h1>
-            <div class="subtitle">TOOL V23 - LICENSE SYSTEM</div>
-        </div>
-        <div class="box">
-            <h2>🔑 Nhận License Key 24h</h2>
-            <p>Nhấn nút để nhận link lấy License Key</p>
-            <form method="POST" action="/get_link">
-                <button type="submit" class="btn">Lấy License Key</button>
-            </form>
-        </div>
-        <div class="info">
-            <h3>📋 Thông tin</h3>
-            <ul>
-                <li>✅ Key hiệu lực <strong>24 giờ</strong></li>
-                <li>✅ Tối đa <strong>3 IP</strong></li>
-                <li>✅ Rate limit: <strong>10 lần/phút</strong></li>
-            </ul>
-        </div>
-    </div>
-</body>
-</html>
-    '''
+def home():
+    """Trang chủ"""
+    try:
+        with open('folder/index.html', 'r', encoding='utf-8') as f:
+            return f.read()
+    except:
+        return "index.html not found"
 
-@app.route("/get_link", methods=['POST'])
+@app.route("/api/get_link")
 def get_link():
-    cleanup()
+    """Tạo link rút gọn Link4m"""
+    if not LINK4M_KEY:
+        return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
-    token = gen_token()
-    key = gen_key()
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    # Tạo session token và key riêng
+    session_token = generate_session_token()
+    unique_key = generate_key()
     
-    # Lưu key
+    # Tạo URL giả (Link4m không redirect được nên không cần URL thật)
+    destination_url = "https://webkeyy.vercel.app"
+    
+    try:
+        # Tạo link rút gọn Link4m
+        create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
+        res = requests.get(create_url, timeout=10).json()
+        
+        if res.get("status") != "success" or not res.get("shortenedUrl"):
+            return jsonify({"status": "error", "msg": "Không tạo được link rút gọn"})
+        
+        short_url = res["shortenedUrl"]
+        
+        # Lưu session với KEY RIÊNG
+        data = load_data()
+        data["sessions"][session_token] = {
+            "unique_key": unique_key,
+            "created_at": time.time(),
+            "link_clicked": False,
+            "ip_address": request.remote_addr
+        }
+        save_data(data)
+        
+        return jsonify({
+            "status": "ok",
+            "message": "Vui lòng vượt link và đợi 15 giây",
+            "url": short_url,
+            "token": session_token
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})
+
+@app.route("/api/get_key")
+def get_key():
+    """Lấy KEY sau khi đã đợi đủ thời gian"""
+    session_token = request.args.get("token")
+    
+    if not session_token:
+        return jsonify({"status": "error", "msg": "Thiếu token"})
+    
     data = load_data()
-    data["keys"][token] = {
-        "key": key,
-        "created_at": time.time(),
-        "ip_list": [ip],
-        "max_ips": 3
-    }
+    
+    if session_token not in data.get("sessions", {}):
+        return jsonify({"status": "error", "msg": "Session không tồn tại hoặc đã hết hạn"})
+    
+    session = data["sessions"][session_token]
+    created_at = session.get("created_at", 0)
+    current_time = time.time()
+    
+    # ✅ KIỂM TRA HẾT HẠN
+    if current_time - created_at > 86400:
+        # Xóa session hết hạn ngay
+        del data["sessions"][session_token]
+        save_data(data)
+        return jsonify({"status": "error", "msg": "Session đã hết hạn (quá 24 giờ)"})
+    
+    # KIỂM TRA: Phải đợi ít nhất 15 giây
+    time_elapsed = current_time - created_at
+    if time_elapsed < 15:
+        remaining = int(15 - time_elapsed)
+        return jsonify({
+            "status": "error",
+            "msg": f"Vui lòng vượt link và đợi thêm {remaining} giây nữa"
+        })
+    
+    # Đủ thời gian → Cho phép lấy key
+    unique_key = session.get("unique_key")
+    expire_time = created_at + 86400
+    
+    if not unique_key:
+        return jsonify({"status": "error", "msg": "Key không tồn tại"})
+    
+    # Đánh dấu đã lấy key
+    data["sessions"][session_token]["link_clicked"] = True
     save_data(data)
     
-    # URL đích
-    dest = f"https://areskey.vercel.app/key/{token}"
-    
-    # Gọi Link4m
-    try:
-        link4m_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={dest}"
-        resp = requests.get(link4m_url, timeout=10)
-        short = resp.text.strip()
-        
-        if not short.startswith('http'):
-            short = dest
-        
-        return f'''
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link - ARES</title>
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }}
-        .container {{ max-width: 500px; width: 100%; }}
-        .banner {{
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 30px;
-            background: rgba(0, 255, 157, 0.1);
-            border: 2px solid #00ff9d;
-            border-radius: 15px;
-        }}
-        h1 {{
-            font-size: 56px;
-            color: #00ff9d;
-            text-shadow: 0 0 30px #00ff9d;
-            letter-spacing: 12px;
-        }}
-        .subtitle {{ font-size: 13px; color: #ffc107; letter-spacing: 3px; }}
-        .box {{
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-        }}
-        h2 {{ color: #00ff9d; margin-bottom: 15px; }}
-        p {{ color: #ccc; margin-bottom: 25px; }}
-        .link-box {{ display: flex; gap: 10px; margin: 25px 0; }}
-        .link-box input {{
-            flex: 1;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid #00ff9d;
-            border-radius: 8px;
-            color: #00ff9d;
-            font-family: monospace;
-        }}
-        .btn {{
-            background: linear-gradient(135deg, #00ff9d, #00cc7a);
-            color: #0a0e27;
-            padding: 18px 50px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            text-decoration: none;
-            display: inline-block;
-        }}
-        .btn-copy {{ background: #ffc107; padding: 15px 25px; cursor: pointer; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="banner">
-            <h1>ARES</h1>
-            <div class="subtitle">TOOL V23 - LICENSE SYSTEM</div>
-        </div>
-        <div class="box">
-            <h2>✅ Link của bạn</h2>
-            <p>Vượt link để nhận key:</p>
-            <div class="link-box">
-                <input id="link" value="{short}" readonly>
-                <button class="btn-copy" onclick="copy()">📋</button>
-            </div>
-            <a href="{short}" target="_blank" class="btn">🔗 Mở Link</a>
-        </div>
-    </div>
-    <script>
-        function copy() {{
-            document.getElementById('link').select();
-            document.execCommand('copy');
-            alert('Đã copy!');
-        }}
-    </script>
-</body>
-</html>
-        '''
-    except Exception as e:
-        return f'<h1 style="color:#fff;text-align:center;padding:50px;">Lỗi: {e}</h1>'
+    return jsonify({
+        "status": "ok",
+        "key": unique_key,
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at)),
+        "expire_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time)),
+        "is_unique": True
+    })
 
-@app.route("/key/<token>")
-def show_key(token):
-    cleanup()
+@app.route("/api/check_key")
+def check_key():
+    """Kiểm tra key có hợp lệ không"""
+    key = request.args.get("key")
+    
+    if not key:
+        return jsonify({"status": "fail", "msg": "Thiếu key"})
     
     data = load_data()
-    if token not in data["keys"]:
-        return '<h1 style="color:#fff;text-align:center;padding:50px;">❌ Link không hợp lệ</h1>'
+    current_time = time.time()
     
-    info = data["keys"][token]
-    key = info["key"]
-    expires = datetime.fromtimestamp(info["created_at"] + 86400).strftime('%d/%m/%Y %H:%M')
+    # Tìm key trong tất cả sessions
+    for session_token, session_data in data.get("sessions", {}).items():
+        if session_data.get("unique_key") == key:
+            # ✅ KIỂM TRA HẾT HẠN
+            created_at = session_data.get("created_at", 0)
+            if current_time - created_at > 86400:
+                # Xóa key hết hạn ngay
+                del data["sessions"][session_token]
+                save_data(data)
+                return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
+            
+            # Key hợp lệ
+            expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
+            return jsonify({
+                "status": "ok",
+                "msg": "Key hợp lệ",
+                "expire_at": expire_at,
+                "is_unique": True
+            })
     
-    return f'''
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key - ARES</title>
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }}
-        .container {{ max-width: 500px; width: 100%; }}
-        .banner {{
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 30px;
-            background: rgba(0, 255, 157, 0.1);
-            border: 2px solid #00ff9d;
-            border-radius: 15px;
-        }}
-        h1 {{
-            font-size: 56px;
-            color: #00ff9d;
-            text-shadow: 0 0 30px #00ff9d;
-            letter-spacing: 12px;
-        }}
-        .subtitle {{ font-size: 13px; color: #ffc107; letter-spacing: 3px; }}
-        .box {{
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-        }}
-        h2 {{ color: #00ff9d; margin-bottom: 20px; }}
-        .key-box {{ display: flex; gap: 10px; margin: 25px 0; }}
-        .key-box input {{
-            flex: 1;
-            padding: 18px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid #00ff9d;
-            border-radius: 8px;
-            color: #00ff9d;
-            font-family: monospace;
-            font-size: 16px;
-            font-weight: bold;
-        }}
-        .btn-copy {{
-            background: #ffc107;
-            color: #0a0e27;
-            padding: 18px 30px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }}
-        .info {{
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            border-radius: 10px;
-            padding: 25px;
-            margin-top: 25px;
-        }}
-        .info h3 {{ color: #ffc107; margin-bottom: 15px; }}
-        .info ul {{ list-style: none; text-align: left; }}
-        .info li {{ padding: 10px 0; color: #ccc; }}
-        .warn {{ color: #ff5252; margin-top: 20px; font-weight: bold; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="banner">
-            <h1>ARES</h1>
-            <div class="subtitle">TOOL V23 - LICENSE SYSTEM</div>
-        </div>
-        <div class="box">
-            <h2>🎉 License Key</h2>
-            <div class="key-box">
-                <input id="key" value="{key}" readonly>
-                <button class="btn-copy" onclick="copy()">📋</button>
-            </div>
-            <div class="info">
-                <h3>⏰ Thông tin</h3>
-                <ul>
-                    <li>🔑 Key: <strong>{key}</strong></li>
-                    <li>⏳ Hết hạn: <strong>{expires}</strong></li>
-                    <li>📍 Max: <strong>3 IP</strong></li>
-                </ul>
-            </div>
-            <p class="warn">⚠️ Lưu lại key!</p>
-        </div>
-    </div>
-    <script>
-        function copy() {{
-            document.getElementById('key').select();
-            document.execCommand('copy');
-            alert('Đã copy!');
-        }}
-    </script>
-</body>
-</html>
-    '''
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    # Không tìm thấy key
+    return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
