@@ -10,9 +10,7 @@ from collections import defaultdict, deque
 
 app = Flask(__name__)
 
-#XOÁ DÒNG NÀY-KHÔNG CẦN NỮA
 LINK4M_KEY = os.getenv("LINK4M_KEY")
-
 KEY_FILE = "/tmp/key.json"
 
 # Rate limiting storage (in-memory)
@@ -80,6 +78,8 @@ def auto_cleanup():
     """Tự động cleanup trước mỗi request"""
     cleanup_old_sessions()
 
+# ==================== ROUTES ====================
+
 @app.route("/")
 def home():
     """Trang chủ"""
@@ -92,29 +92,26 @@ def get_link():
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
     session_token = generate_session_token()
+    unique_key = generate_key()
     user_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
-    # URL đích - ĐỔI DOMAIN NẾU CẦN
-    destination_url = f"https://webkeyy.vercel.app/success?s={session_token}"
+    # URL đích - Route ngắn gọn
+    destination_url = f"https://reskey.vercel.app/k/{session_token}"
     
     try:
-        # API MỚI của Link4m
+        # Gọi API Link4m
         api_url = f"https://link4m.co/api?api={LINK4M_KEY}&url={destination_url}"
         
-        print(f"[INFO] Gọi Link4m API: {api_url}")
+        print(f"[INFO] Gọi Link4m API")
         
         response = requests.get(api_url, timeout=10)
-        
-        print(f"[INFO] Link4m response: {response.text}")
-        
-        # Link4m API trả về link rút gọn trực tiếp (text)
         short_url = response.text.strip()
         
-        # Lưu session
+        # Lưu session với KEY ĐÃ TẠO SẴN
         data = load_data()
         data["sessions"][session_token] = {
-            "unique_key": None,
+            "unique_key": unique_key,
             "created_at": time.time(),
             "verified": False,
             "owner_ip": user_ip,
@@ -125,7 +122,7 @@ def get_link():
         }
         save_data(data)
         
-        print(f"[GET_LINK] Token: {session_token[:8]}... | IP: {user_ip} | Short URL: {short_url}")
+        print(f"[GET_LINK] Token: {session_token[:8]}... | Key: {unique_key[:8]}... | IP: {user_ip}")
         
         return jsonify({
             "status": "ok",
@@ -136,16 +133,15 @@ def get_link():
         
     except Exception as e:
         print(f"[ERROR] get_link: {e}")
-        return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})})
+        return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})
 
-@app.route("/success")
-def success_page():
-    """Trang đích sau khi vượt Link4m - TỰ ĐỘNG TẠO VÀ HIỂN THỊ KEY"""
-    session_token = request.args.get("s")
-    
-    if not session_token:
-        return render_template_string(ERROR_PAGE, error_msg="Thiếu token")
-    
+@app.route("/k/<session_token>")
+def get_key_page(session_token):
+    """
+    Route hiển thị key - CHỈ TRUY CẬP SAU KHI VƯỢT LINK4M
+    Đơn giản: Vào là hiển thị key luôn!
+    """
+    current_ip = request.remote_addr
     data = load_data()
     
     if session_token not in data.get("sessions", {}):
@@ -161,35 +157,30 @@ def success_page():
         save_data(data)
         return render_template_string(ERROR_PAGE, error_msg="Session đã hết hạn (quá 24 giờ)")
     
-    # Lấy IP hiện tại
-    current_ip = request.remote_addr
-    
-    # ===== THÊM: IP TRACKING (Max 3 IPs) =====
+    # ===== IP TRACKING =====
     ip_list = session.get("ip_list", [session.get("owner_ip")])
     max_ips = session.get("max_ips", 3)
     
     if current_ip not in ip_list:
         if len(ip_list) >= max_ips:
             return render_template_string(ERROR_PAGE, 
-                error_msg=f"Key này đang được sử dụng trên {max_ips} thiết bị khác. Không được chia sẻ key! Vui lòng lấy key mới tại https://webkeyy.vercel.app")
+                error_msg=f"Key này đang được sử dụng trên {max_ips} thiết bị khác. Vui lòng lấy key mới tại trang chủ.")
         else:
             ip_list.append(current_ip)
             session["ip_list"] = ip_list
             print(f"[IP_ADD] Token: {session_token[:8]}... | Thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
     
-    # TẠO KEY NẾU CHƯA CÓ (lần đầu vào trang success)
-    if not session.get("unique_key"):
-        session["unique_key"] = generate_key()
-        session["verified"] = True
-        print(f"[SUCCESS] Tạo key mới: {session['unique_key'][:8]}... | IP: {current_ip}")
-    
-    # Lưu session
+    # ===== SET VERIFIED =====
+    session["verified"] = True
     data["sessions"][session_token] = session
     save_data(data)
     
-    unique_key = session["unique_key"]
+    print(f"[KEY_PAGE] Token: {session_token[:8]}... | IP: {current_ip} | IPs: {len(ip_list)}/{max_ips}")
+    
+    # Hiển thị key
+    unique_key = session.get("unique_key")
     expire_time = created_at + 86400
-    expire_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time))
+    expire_str = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(expire_time))
     
     return render_template_string(SUCCESS_PAGE, 
         key=unique_key, 
@@ -199,7 +190,7 @@ def success_page():
 
 @app.route("/api/check_key")
 def check_key():
-    """Kiểm tra key có hợp lệ không - VỚI IP TRACKING & RATE LIMITING"""
+    """Kiểm tra key có hợp lệ không - CHO TOOL SỬ DỤNG"""
     key = request.args.get("key")
     
     if not key:
@@ -207,14 +198,14 @@ def check_key():
     
     current_ip = request.remote_addr
     
-    # ===== THÊM: RATE LIMITING - IP Level =====
-    ip_allowed, ip_count = check_rate_limit(f"ip:{current_ip}", max_requests=20, time_window=60)
+    # Rate limiting - IP Level
+    ip_allowed, _ = check_rate_limit(f"ip:{current_ip}", max_requests=20, time_window=60)
     if not ip_allowed:
         print(f"[RATE_LIMIT] IP {current_ip} vượt quá 20 req/phút")
         return jsonify({"status": "fail", "msg": "Quá nhiều requests từ IP của bạn. Vui lòng chờ 1 phút."})
     
-    # ===== THÊM: RATE LIMITING - Key Level =====
-    key_allowed, key_count = check_rate_limit(f"key:{key}", max_requests=10, time_window=60)
+    # Rate limiting - Key Level
+    key_allowed, _ = check_rate_limit(f"key:{key}", max_requests=10, time_window=60)
     if not key_allowed:
         print(f"[RATE_LIMIT] Key {key[:8]}... vượt quá 10 req/phút")
         return jsonify({"status": "fail", "msg": "Key đang được check quá nhiều lần. Vui lòng chờ."})
@@ -232,7 +223,14 @@ def check_key():
                 save_data(data)
                 return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
             
-            # ===== THÊM: IP TRACKING (Max 3 IPs) =====
+            # KIỂM TRA ĐÃ VERIFY CHƯA
+            if not session_data.get("verified"):
+                return jsonify({
+                    "status": "fail",
+                    "msg": "Key chưa được kích hoạt. Vui lòng vượt link Link4m trước."
+                })
+            
+            # IP TRACKING
             ip_list = session_data.get("ip_list", [session_data.get("owner_ip")])
             max_ips = session_data.get("max_ips", 3)
             
@@ -241,7 +239,7 @@ def check_key():
                     print(f"[IP_LIMIT] Key {key[:8]}... đã đủ {max_ips} IP | Current: {current_ip}")
                     return jsonify({
                         "status": "fail",
-                        "msg": f"Key đang được sử dụng trên thiết bị khác. Vui lòng lấy key mới tại https://webkeyy.vercel.app"
+                        "msg": f"Key đang được sử dụng trên thiết bị khác. Vui lòng lấy key mới."
                     })
                 else:
                     ip_list.append(current_ip)
@@ -250,7 +248,7 @@ def check_key():
                     save_data(data)
                     print(f"[IP_ADD] Key {key[:8]}... thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
             
-            # ===== THÊM: Update check count =====
+            # Update check count
             session_data["check_count"] = session_data.get("check_count", 0) + 1
             session_data["last_check"] = current_time
             data["sessions"][session_token] = session_data
@@ -285,7 +283,7 @@ INDEX_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARES Tool - Hệ Thống Quản Lý Key</title>
+    <title>ARES Tool - Hệ Thống Key</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -295,15 +293,8 @@ INDEX_HTML = """
             min-height: 100vh;
             padding: 20px;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding-top: 40px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+        .container { max-width: 600px; margin: 0 auto; padding-top: 40px; }
+        .header { text-align: center; margin-bottom: 40px; }
         .logo {
             font-size: 64px;
             font-weight: bold;
@@ -312,21 +303,9 @@ INDEX_HTML = """
             letter-spacing: 8px;
             margin-bottom: 10px;
         }
-        .subtitle {
-            font-size: 18px;
-            color: #ffc107;
-            margin-bottom: 20px;
-        }
-        .description {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.6;
-        }
-        .status-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
+        .subtitle { font-size: 18px; color: #ffc107; margin-bottom: 20px; }
+        .description { font-size: 16px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; }
+        .status-bar { display: flex; gap: 10px; margin-bottom: 30px; }
         .status-item {
             flex: 1;
             background: rgba(255, 255, 255, 0.05);
@@ -442,7 +421,7 @@ INDEX_HTML = """
     <div class="container">
         <div class="header">
             <div class="logo">ARES</div>
-            <div class="subtitle">LICENSE KEY SYSTEM V2.0 - IP TRACKING</div>
+            <div class="subtitle">LICENSE KEY SYSTEM V2.0</div>
             <div class="description">
                 Nhận key miễn phí với hiệu lực 24 giờ để sử dụng ARES Tool
             </div>
@@ -611,7 +590,6 @@ SUCCESS_PAGE = """
             transition: all 0.3s;
         }
         .copy-btn:hover { background: #00cc7d; transform: scale(1.05); }
-        .copy-btn:active { transform: scale(0.95); }
         .info {
             background: rgba(255, 193, 7, 0.1);
             border: 1px solid #ffc107;
@@ -914,7 +892,6 @@ HUONG_DAN_HTML = """
         <h1>🎮 ARES TOOL V23</h1>
         <div class="subtitle">Hướng Dẫn Cài Đặt & Sử Dụng</div>
 
-        <!-- BƯỚC 1 -->
         <div class="section">
             <h2><span class="step-number">1</span> Tải & Cài Đặt Termux</h2>
             <p>⚠️ <strong>QUAN TRỌNG:</strong> Không tải Termux từ Google Play Store!</p>
@@ -926,12 +903,11 @@ HUONG_DAN_HTML = """
                     </a>
                 </div>
                 <div class="info-item">
-                    💡 Phiên bản Play Store không còn được cập nhật và có thể gây lỗi
+                    💡 Phiên bản Play Store không còn được cập nhật
                 </div>
             </div>
         </div>
 
-        <!-- BƯỚC 2 -->
         <div class="section">
             <h2><span class="step-number">2</span> Cài Đặt Môi Trường</h2>
             <p>Mở Termux và chạy từng lệnh sau:</p>
@@ -946,10 +922,8 @@ HUONG_DAN_HTML = """
                 <button class="copy-btn" onclick="copyCode(this, 'pkg install python git -y')">📋 Copy</button>
                 <code>pkg install python git -y</code>
             </div>
-            <div class="info-item">📦 Cài đặt Python và Git</div>
         </div>
 
-        <!-- BƯỚC 3 -->
         <div class="section">
             <h2><span class="step-number">3</span> Tải Tool Từ GitHub</h2>
             
@@ -967,16 +941,14 @@ HUONG_DAN_HTML = """
                 <button class="copy-btn" onclick="copyCode(this, 'pip install -r requirements.txt')">📋 Copy</button>
                 <code>pip install -r requirements.txt</code>
             </div>
-            <div class="info-item">⏱️ Chờ cài đặt thư viện (requests, colorama, websocket-client)</div>
         </div>
 
-        <!-- BƯỚC 4 -->
         <div class="section">
             <h2><span class="step-number">4</span> Lấy License Key</h2>
             
             <div class="info-box">
                 <h3>🔑 Cách Lấy Key:</h3>
-                <div class="info-item">1️⃣ Vào trang chủ: <a href="/" class="link">webkeyy.vercel.app</a></div>
+                <div class="info-item">1️⃣ Vào trang chủ: <a href="/" class="link">Lấy key tại đây</a></div>
                 <div class="info-item">2️⃣ Click nút "Lấy Key Ngay"</div>
                 <div class="info-item">3️⃣ Hoàn thành bước xác minh Link4m</div>
                 <div class="info-item">4️⃣ Copy key hiển thị trên màn hình</div>
@@ -984,7 +956,6 @@ HUONG_DAN_HTML = """
             </div>
         </div>
 
-        <!-- BƯỚC 5 -->
         <div class="section">
             <h2><span class="step-number">5</span> Chạy Tool</h2>
             
@@ -997,7 +968,6 @@ HUONG_DAN_HTML = """
             <div class="info-item">✅ Tool sẽ tự động kết nối và bắt đầu chạy</div>
         </div>
 
-        <!-- LƯU Ý SỬ DỤNG -->
         <div class="section">
             <h2>💡 Lưu Ý Khi Sử Dụng</h2>
             <div class="info-box">
@@ -1005,59 +975,7 @@ HUONG_DAN_HTML = """
                 <div class="info-item">✅ Key hoạt động tốt nhất khi dùng trên 1 thiết bị</div>
                 <div class="info-item">✅ Hỗ trợ đổi mạng 4G/Wifi trong quá trình sử dụng</div>
                 <div class="info-item">✅ Sau 24h, quay lại trang chủ để lấy key mới</div>
-                <div class="info-item">✅ Hoàn toàn miễn phí, không giới hạn số lần lấy key</div>
             </div>
-        </div>
-
-        <!-- XỬ LÝ LỖI -->
-        <div class="section">
-            <h2>🔧 Xử Lý Lỗi Thường Gặp</h2>
-            
-            <div class="warning-box">
-                <h3>Lỗi: "Key không hợp lệ"</h3>
-                <div class="info-item">• Kiểm tra key còn hạn không (24h kể từ khi lấy)</div>
-                <div class="info-item">• Đảm bảo copy đúng key (không thừa khoảng trắng)</div>
-                <div class="info-item">• Thử lấy key mới tại trang chủ</div>
-            </div>
-
-            <div class="warning-box">
-                <h3>Lỗi: "Key đang được sử dụng"</h3>
-                <div class="info-item">• Đóng tool trên thiết bị khác nếu đang chạy</div>
-                <div class="info-item">• Chờ vài phút rồi thử lại</div>
-                <div class="info-item">• Nếu vẫn lỗi, lấy key mới sau 24h</div>
-            </div>
-
-            <div class="warning-box">
-                <h3>Lỗi: "Quá nhiều requests"</h3>
-                <div class="info-item">• Chờ 1-2 phút rồi thử lại</div>
-                <div class="info-item">• Tránh khởi động lại tool liên tục</div>
-            </div>
-
-            <div class="warning-box">
-                <h3>Tool không kết nối được</h3>
-                <div class="info-item">• Kiểm tra kết nối mạng</div>
-                <div class="info-item">• Khởi động lại Termux</div>
-                <div class="info-item">• Cập nhật tool: <code style="color: #ffc107;">cd arestool && git pull</code></div>
-            </div>
-        </div>
-
-        <!-- MẸO -->
-        <div class="section">
-            <h2>✨ Mẹo Sử Dụng Hiệu Quả</h2>
-            <div class="info-box">
-                <div class="info-item">💡 Dùng wifi ổn định để tool chạy mượt mà hơn</div>
-                <div class="info-item">💡 Lấy key vào đầu ngày để có thời gian sử dụng tối đa</div>
-                <div class="info-item">💡 Không tắt Termux khi tool đang chạy</div>
-                <div class="info-item">💡 Bookmark trang chủ để lấy key nhanh hơn</div>
-            </div>
-        </div>
-
-        <!-- LIÊN HỆ -->
-        <div class="section">
-            <h2>📞 Hỗ Trợ</h2>
-            <div class="info-item">💬 Nếu cần hỗ trợ, liên hệ admin qua Telegram/Discord</div>
-            <div class="info-item">📖 GitHub: <a href="https://github.com/quocdung1303/arestool" class="link" target="_blank">github.com/quocdung1303/arestool</a></div>
-            <div class="info-item">🌟 Nhớ star repo nếu thấy tool hữu ích!</div>
         </div>
 
         <center>
@@ -1084,3 +1002,77 @@ HUONG_DAN_HTML = """
 </body>
 </html>
 """
+
+# ==================== API CHO TOOL POLLING ====================
+
+@app.route("/api/get_key_by_token")
+def get_key_by_token():
+    """
+    API cho TOOL - Lấy key bằng token
+    Tool polling API này để tự động nhận key sau khi user vượt link
+    """
+    session_token = request.args.get("token")
+    
+    if not session_token:
+        return jsonify({"status": "error", "msg": "Thiếu token"})
+    
+    current_ip = request.remote_addr
+    
+    # Rate limiting - IP Level (cho phép nhiều hơn vì tool sẽ polling)
+    ip_allowed, _ = check_rate_limit(f"ip:{current_ip}", max_requests=30, time_window=60)
+    if not ip_allowed:
+        return jsonify({"status": "error", "msg": "Quá nhiều requests. Vui lòng chờ."})
+    
+    data = load_data()
+    
+    if session_token not in data.get("sessions", {}):
+        return jsonify({"status": "error", "msg": "Token không tồn tại hoặc đã hết hạn"})
+    
+    session = data["sessions"][session_token]
+    current_time = time.time()
+    created_at = session.get("created_at", 0)
+    
+    # Kiểm tra hết hạn
+    if current_time - created_at > 86400:
+        del data["sessions"][session_token]
+        save_data(data)
+        return jsonify({"status": "error", "msg": "Token đã hết hạn (quá 24 giờ)"})
+    
+    # KIỂM TRA ĐÃ VERIFY CHƯA
+    if not session.get("verified"):
+        return jsonify({
+            "status": "waiting",
+            "msg": "Vui lòng vượt link Link4m. Tool sẽ tự động nhận key sau khi bạn vượt xong."
+        })
+    
+    # IP TRACKING
+    ip_list = session.get("ip_list", [session.get("owner_ip")])
+    max_ips = session.get("max_ips", 3)
+    
+    if current_ip not in ip_list:
+        if len(ip_list) >= max_ips:
+            print(f"[IP_LIMIT] Token {session_token[:8]}... đã đủ {max_ips} IP | Current: {current_ip}")
+            return jsonify({
+                "status": "error",
+                "msg": f"Key đã được sử dụng trên {max_ips} thiết bị khác."
+            })
+        else:
+            ip_list.append(current_ip)
+            session["ip_list"] = ip_list
+            data["sessions"][session_token] = session
+            save_data(data)
+            print(f"[IP_ADD] Token {session_token[:8]}... thêm IP: {current_ip} ({len(ip_list)}/{max_ips})")
+    
+    # Đã verify → Trả key
+    unique_key = session.get("unique_key")
+    expire_time = created_at + 86400
+    expire_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(expire_time))
+    
+    print(f"[GET_KEY_BY_TOKEN] Token: {session_token[:8]}... | Key: {unique_key[:8]}... | IP: {current_ip}")
+    
+    return jsonify({
+        "status": "ok",
+        "key": unique_key,
+        "expire_at": expire_str,
+        "msg": "Key đã sẵn sàng!"
+    })
