@@ -96,17 +96,42 @@ def get_link():
     user_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
-    # URL đích - Route hiển thị key
+    # URL đích
     destination_url = f"https://areskey.vercel.app/k/{session_token}"
     
     try:
-        # Gọi API Link4m (endpoint đúng: /st)
+        # Gọi API Link4m
         api_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={destination_url}"
         
-        print(f"[INFO] Gọi Link4m API")
+        print(f"[INFO] Gọi Link4m API: {api_url}")
         
-        response = requests.get(api_url, timeout=10)
+        # ✅ Thêm headers giả browser để tránh Cloudflare
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+        response = requests.get(api_url, headers=headers, timeout=10)
+        
+        # ✅ Xử lý response (plain text, không phải JSON)
         short_url = response.text.strip()
+        
+        # Kiểm tra Cloudflare HTML
+        if short_url.startswith('<!DOCTYPE') or short_url.startswith('<html'):
+            print(f"[ERROR] Link4m bị Cloudflare chặn")
+            return jsonify({
+                "status": "error", 
+                "msg": "Link4m tạm thời bị chặn. Vui lòng thử lại sau."
+            })
+        
+        # Kiểm tra link hợp lệ
+        if not short_url.startswith('http'):
+            print(f"[ERROR] Link4m response không hợp lệ: {short_url[:100]}")
+            return jsonify({
+                "status": "error", 
+                "msg": f"Link4m lỗi: {short_url[:50]}"
+            })
+        
+        print(f"[SUCCESS] Short URL: {short_url}")
         
         # Lưu session
         data = load_data()
