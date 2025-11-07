@@ -5,11 +5,14 @@ import string
 import time
 import json
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 
 LINK4M_KEY = os.environ.get('LINK4M_KEY', '6906d12068643654b40df4e9')
 DATA_FILE = '/tmp/keys.json'
+
+# ==================== HELPERS ====================
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -27,14 +30,26 @@ def save_data(data):
     except:
         pass
 
+def cleanup():
+    data = load_data()
+    now = time.time()
+    expired = [k for k, v in data["keys"].items() if now - v.get("created_at", 0) > 86400]
+    for k in expired:
+        del data["keys"][k]
+    if expired:
+        save_data(data)
+
 def gen_token():
     return secrets.token_urlsafe(32)
 
 def gen_key():
     return 'ARES-' + ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(16))
 
+# ==================== ROUTES ====================
+
 @app.route("/")
 def index():
+    cleanup()
     return '''
 <!DOCTYPE html>
 <html lang="vi">
@@ -68,13 +83,8 @@ def index():
             color: #00ff9d;
             text-shadow: 0 0 30px #00ff9d;
             letter-spacing: 12px;
-            margin-bottom: 10px;
         }
-        .subtitle {
-            font-size: 13px;
-            color: #ffc107;
-            letter-spacing: 3px;
-        }
+        .subtitle { font-size: 13px; color: #ffc107; letter-spacing: 3px; }
         .box {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(0, 255, 157, 0.3);
@@ -82,8 +92,8 @@ def index():
             padding: 40px;
             text-align: center;
         }
-        h2 { color: #00ff9d; margin-bottom: 15px; font-size: 24px; }
-        p { color: #ccc; margin-bottom: 25px; line-height: 1.6; }
+        h2 { color: #00ff9d; margin-bottom: 15px; }
+        p { color: #ccc; margin-bottom: 25px; }
         .btn {
             background: linear-gradient(135deg, #00ff9d, #00cc7a);
             color: #0a0e27;
@@ -93,11 +103,6 @@ def index():
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 255, 157, 0.5);
         }
         .info {
             background: rgba(0, 0, 0, 0.2);
@@ -106,9 +111,9 @@ def index():
             padding: 25px;
             margin-top: 25px;
         }
-        .info h3 { color: #ffc107; margin-bottom: 15px; font-size: 18px; }
+        .info h3 { color: #ffc107; margin-bottom: 15px; }
         .info ul { list-style: none; text-align: left; }
-        .info li { padding: 10px 0; color: #ccc; font-size: 15px; }
+        .info li { padding: 10px 0; color: #ccc; }
     </style>
 </head>
 <body>
@@ -119,7 +124,7 @@ def index():
         </div>
         <div class="box">
             <h2>🔑 Nhận License Key 24h</h2>
-            <p>Nhấn nút bên dưới để nhận link lấy License Key miễn phí</p>
+            <p>Nhấn nút để nhận link lấy License Key</p>
             <form method="POST" action="/get_link">
                 <button type="submit" class="btn">Lấy License Key</button>
             </form>
@@ -127,10 +132,9 @@ def index():
         <div class="info">
             <h3>📋 Thông tin</h3>
             <ul>
-                <li>✅ License Key có hiệu lực <strong>24 giờ</strong></li>
-                <li>✅ Tối đa <strong>3 địa chỉ IP</strong> khác nhau</li>
+                <li>✅ Key hiệu lực <strong>24 giờ</strong></li>
+                <li>✅ Tối đa <strong>3 IP</strong></li>
                 <li>✅ Rate limit: <strong>10 lần/phút</strong></li>
-                <li>❌ Không chia sẻ key cho người khác</li>
             </ul>
         </div>
     </div>
@@ -140,11 +144,13 @@ def index():
 
 @app.route("/get_link", methods=['POST'])
 def get_link():
+    cleanup()
+    
     token = gen_token()
     key = gen_key()
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     
-    # Lưu key vào data
+    # Lưu key
     data = load_data()
     data["keys"][token] = {
         "key": key,
@@ -154,23 +160,17 @@ def get_link():
     }
     save_data(data)
     
-    # URL đích - Trang 2 hiển thị key
-    destination = f"https://areskey-display.vercel.app/?token={token}"
+    # URL đích
+    dest = f"https://areskey.vercel.app/key/{token}"
     
     # Gọi Link4m
     try:
-        link4m_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={destination}"
-        resp = requests.get(link4m_url, timeout=10, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
-        
+        link4m_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={dest}"
+        resp = requests.get(link4m_url, timeout=10)
         short = resp.text.strip()
         
-        # Validate
         if not short.startswith('http'):
-            short = destination
-        
-        print(f"[GET_LINK] Token: {token} | Key: {key} | Link: {short}")
+            short = dest
         
         return f'''
 <!DOCTYPE html>
@@ -178,7 +178,7 @@ def get_link():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link của bạn - ARES</title>
+    <title>Link - ARES</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{
@@ -248,9 +248,9 @@ def get_link():
         </div>
         <div class="box">
             <h2>✅ Link của bạn</h2>
-            <p>Vui lòng vượt link để nhận License Key:</p>
+            <p>Vượt link để nhận key:</p>
             <div class="link-box">
-                <input type="text" id="link" value="{short}" readonly>
+                <input id="link" value="{short}" readonly>
                 <button class="btn-copy" onclick="copy()">📋</button>
             </div>
             <a href="{short}" target="_blank" class="btn">🔗 Mở Link</a>
@@ -267,15 +267,130 @@ def get_link():
 </html>
         '''
     except Exception as e:
-        return f'<h1 style="color:#fff;">Lỗi: {e}</h1>'
+        return f'<h1 style="color:#fff;text-align:center;padding:50px;">Lỗi: {e}</h1>'
 
-@app.route("/api/get_key/<token>")
-def api_get_key(token):
-    """API cho trang 2 lấy key"""
+@app.route("/key/<token>")
+def show_key(token):
+    cleanup()
+    
     data = load_data()
-    if token in data["keys"]:
-        return data["keys"][token]
-    return {"error": "Token không hợp lệ"}
+    if token not in data["keys"]:
+        return '<h1 style="color:#fff;text-align:center;padding:50px;">❌ Link không hợp lệ</h1>'
+    
+    info = data["keys"][token]
+    key = info["key"]
+    expires = datetime.fromtimestamp(info["created_at"] + 86400).strftime('%d/%m/%Y %H:%M')
+    
+    return f'''
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key - ARES</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }}
+        .container {{ max-width: 500px; width: 100%; }}
+        .banner {{
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: rgba(0, 255, 157, 0.1);
+            border: 2px solid #00ff9d;
+            border-radius: 15px;
+        }}
+        h1 {{
+            font-size: 56px;
+            color: #00ff9d;
+            text-shadow: 0 0 30px #00ff9d;
+            letter-spacing: 12px;
+        }}
+        .subtitle {{ font-size: 13px; color: #ffc107; letter-spacing: 3px; }}
+        .box {{
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+        }}
+        h2 {{ color: #00ff9d; margin-bottom: 20px; }}
+        .key-box {{ display: flex; gap: 10px; margin: 25px 0; }}
+        .key-box input {{
+            flex: 1;
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #00ff9d;
+            border-radius: 8px;
+            color: #00ff9d;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+        }}
+        .btn-copy {{
+            background: #ffc107;
+            color: #0a0e27;
+            padding: 18px 30px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }}
+        .info {{
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 25px;
+        }}
+        .info h3 {{ color: #ffc107; margin-bottom: 15px; }}
+        .info ul {{ list-style: none; text-align: left; }}
+        .info li {{ padding: 10px 0; color: #ccc; }}
+        .warn {{ color: #ff5252; margin-top: 20px; font-weight: bold; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="banner">
+            <h1>ARES</h1>
+            <div class="subtitle">TOOL V23 - LICENSE SYSTEM</div>
+        </div>
+        <div class="box">
+            <h2>🎉 License Key</h2>
+            <div class="key-box">
+                <input id="key" value="{key}" readonly>
+                <button class="btn-copy" onclick="copy()">📋</button>
+            </div>
+            <div class="info">
+                <h3>⏰ Thông tin</h3>
+                <ul>
+                    <li>🔑 Key: <strong>{key}</strong></li>
+                    <li>⏳ Hết hạn: <strong>{expires}</strong></li>
+                    <li>📍 Max: <strong>3 IP</strong></li>
+                </ul>
+            </div>
+            <p class="warn">⚠️ Lưu lại key!</p>
+        </div>
+    </div>
+    <script>
+        function copy() {{
+            document.getElementById('key').select();
+            document.execCommand('copy');
+            alert('Đã copy!');
+        }}
+    </script>
+</body>
+</html>
+    '''
 
 if __name__ == "__main__":
     app.run(debug=True)
