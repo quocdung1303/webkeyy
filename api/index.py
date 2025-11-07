@@ -97,11 +97,11 @@ def get_link():
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
     # URL đích - Route hiển thị key
-    destination_url = f"https://reskey.vercel.app/k/{session_token}"
+    destination_url = f"https://areskey.vercel.app/k/{session_token}"
     
     try:
-        # Gọi API Link4m
-        api_url = f"https://link4m.co/api?api={LINK4M_KEY}&url={destination_url}"
+        # Gọi API Link4m (endpoint đúng: /st)
+        api_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={destination_url}"
         
         print(f"[INFO] Gọi Link4m API")
         
