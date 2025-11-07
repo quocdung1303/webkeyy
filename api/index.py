@@ -5,6 +5,7 @@ import string
 import time
 import json
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -429,7 +430,7 @@ def index():
 
 @app.route("/get_key", methods=['POST'])
 def get_key():
-    """Tạo link Link4m"""
+    """Tạo link Link4m cho user"""
     if not LINK4M_KEY:
         return render_error("Hệ thống chưa được cấu hình. Vui lòng thử lại sau.")
     
@@ -440,28 +441,49 @@ def get_key():
     user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     user_agent = request.headers.get('User-Agent', 'Unknown')
     
+    # URL đích - trang hiển thị key
     destination_url = f"https://areskey.vercel.app/k/{session_token}"
     
     try:
+        # ✅ GỌI API LINK4M
         api_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={destination_url}"
         
-        print(f"[INFO] Gọi Link4m API")
+        print(f"[INFO] Gọi Link4m API: {api_url}")
         
+        # Headers giả browser
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://link4m.co/'
         }
         
-        response = requests.get(api_url, headers=headers, timeout=10)
+        # Gọi API
+        response = requests.get(api_url, headers=headers, timeout=15)
+        
+        print(f"[DEBUG] Status Code: {response.status_code}")
+        print(f"[DEBUG] Response (first 300 chars): {response.text[:300]}")
+        
+        # Lấy link rút gọn
         short_url = response.text.strip()
         
-        if short_url.startswith('<!DOCTYPE') or short_url.startswith('<html'):
-            return render_error("Link4m tạm thời bị lỗi. Vui lòng thử lại sau.")
+        # Kiểm tra response có phải HTML (lỗi Cloudflare)
+        if short_url.startswith('<!DOCTYPE') or '<html' in short_url.lower():
+            print(f"[ERROR] Link4m trả về HTML (Cloudflare block)")
+            # Fallback: dùng link trực tiếp
+            short_url = destination_url
+            print(f"[FALLBACK] Sử dụng link trực tiếp")
         
-        if not short_url.startswith('http'):
-            return render_error(f"Lỗi tạo link: {short_url[:100]}")
+        # Kiểm tra link hợp lệ
+        elif not short_url.startswith('http'):
+            print(f"[ERROR] Link4m response không hợp lệ: {short_url}")
+            # Fallback: dùng link trực tiếp
+            short_url = destination_url
+            print(f"[FALLBACK] Sử dụng link trực tiếp")
         
-        print(f"[SUCCESS] Short URL: {short_url}")
+        print(f"[SUCCESS] Final URL: {short_url}")
         
+        # Lưu session vào database
         data = load_data()
         data["sessions"][session_token] = {
             "unique_key": unique_key,
@@ -471,6 +493,7 @@ def get_key():
             "owner_user_agent": user_agent
         }
         
+        # Lưu key info
         data["keys"][unique_key] = {
             "created_at": time.time(),
             "ip_list": [],
@@ -484,15 +507,24 @@ def get_key():
         
         print(f"[GET_KEY] Token: {session_token[:8]}... | Key: {unique_key} | IP: {user_ip}")
         
+        # Trả về trang hiển thị link
         return render_index(link=short_url)
         
+    except requests.exceptions.Timeout:
+        print(f"[ERROR] Link4m timeout")
+        return render_error("Link4m không phản hồi. Vui lòng thử lại sau.")
+    
+    except requests.exceptions.ConnectionError:
+        print(f"[ERROR] Cannot connect to Link4m")
+        return render_error("Không thể kết nối Link4m. Vui lòng thử lại sau.")
+    
     except Exception as e:
-        print(f"[ERROR] get_key: {e}")
+        print(f"[ERROR] get_key exception: {str(e)}")
         return render_error(f"Lỗi hệ thống: {str(e)}")
 
 @app.route("/k/<token>")
 def display_key(token):
-    """Hiển thị key"""
+    """Hiển thị key sau khi user vượt link"""
     cleanup_old_sessions()
     
     data = load_data()
@@ -504,11 +536,13 @@ def display_key(token):
     unique_key = session["unique_key"]
     user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     
+    # Đánh dấu session đã verified
     if not session.get("verified"):
         session["verified"] = True
         session["verified_at"] = time.time()
         session["verified_ip"] = user_ip
     
+    # Thêm IP vào key info
     if unique_key in data["keys"]:
         key_info = data["keys"][unique_key]
         if user_ip not in key_info["ip_list"]:
@@ -516,7 +550,7 @@ def display_key(token):
     
     save_data(data)
     
-    from datetime import datetime
+    # Tính thời gian hết hạn
     expires_at = datetime.fromtimestamp(session["created_at"] + 86400)
     
     print(f"[DISPLAY_KEY] Token: {token[:8]}... | Key: {unique_key} | IP: {user_ip}")
@@ -525,7 +559,7 @@ def display_key(token):
 
 @app.route("/api/check_key", methods=['POST'])
 def check_key():
-    """API kiểm tra key"""
+    """API kiểm tra key hợp lệ"""
     cleanup_old_sessions()
     
     try:
