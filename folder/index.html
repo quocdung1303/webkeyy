@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARES Tool - Hệ Thống Quản Lý Key</title>
+    <title>🔑 Hệ thống Key</title>
     <style>
         * {
             margin: 0;
@@ -13,363 +13,416 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #fff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
         }
 
         .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding-top: 40px;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
         }
 
-        .header {
+        h1 {
+            color: #333;
             text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .logo {
-            font-size: 64px;
-            font-weight: bold;
-            color: #00ff9d;
-            text-shadow: 0 0 30px rgba(0, 255, 157, 0.5);
-            letter-spacing: 8px;
             margin-bottom: 10px;
+            font-size: 28px;
         }
 
         .subtitle {
-            font-size: 18px;
-            color: #ffc107;
-            margin-bottom: 20px;
-        }
-
-        .description {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.6;
-        }
-
-        .status-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-
-        .status-item {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-            border-radius: 12px;
-            padding: 15px;
             text-align: center;
-        }
-
-        .status-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .status-text {
+            color: #666;
+            margin-bottom: 30px;
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
         }
 
-        .main-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid #00ff9d;
-            border-radius: 20px;
-            padding: 40px;
-            margin-bottom: 30px;
-            box-shadow: 0 0 40px rgba(0, 255, 157, 0.2);
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
         }
 
-        .card-title {
-            font-size: 28px;
-            color: #00ff9d;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .card-description {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.8);
-            text-align: center;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-
-        .get-key-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
-            color: #0a0e27;
-            border: none;
-            padding: 18px;
-            font-size: 20px;
+        .step-title {
             font-weight: bold;
-            border-radius: 12px;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .step-content {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            margin-top: 10px;
         }
 
-        .get-key-btn:hover {
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.4);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .get-key-btn:active {
-            transform: translateY(0);
-        }
-
-        .get-key-btn:disabled {
-            background: rgba(255, 255, 255, 0.2);
+        .btn:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
-        .link-box {
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid #ffc107;
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 20px;
+        .link-display {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            border: 2px solid #2196F3;
+        }
+
+        .link-display.show {
+            display: block;
+        }
+
+        .link-url {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            margin: 10px 0;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .link-url:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .timer {
+            background: #fff3cd;
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .timer-title {
+            color: #ff6b00;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .timer-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff6b00;
+        }
+
+        .key-display {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
             display: none;
         }
 
-        .link-box.active {
+        .key-display.show {
             display: block;
-            animation: fadeIn 0.3s ease-in;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .link-title {
-            font-size: 20px;
-            color: #ffc107;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .link-instruction {
-            font-size: 15px;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 20px;
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        .link-button {
-            width: 100%;
-            background: #ffc107;
-            color: #0a0e27;
-            border: none;
-            padding: 16px;
+        .key-value {
             font-size: 18px;
             font-weight: bold;
+            letter-spacing: 1px;
+            margin-top: 10px;
+            word-break: break-all;
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .message {
+            padding: 15px;
             border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
+            margin: 15px 0;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.show {
             display: block;
+        }
+
+        .message.error {
+            background: #fee;
+            color: #c33;
+            border-left: 4px solid #c33;
+        }
+
+        .message.success {
+            background: #efe;
+            color: #3c3;
+            border-left: 4px solid #3c3;
+        }
+
+        .message.info {
+            background: #eef;
+            color: #33c;
+            border-left: 4px solid #33c;
+        }
+
+        .loading {
+            display: none;
             text-align: center;
+            color: #667eea;
+            margin: 10px 0;
         }
 
-        .link-button:hover {
-            background: #ffb300;
-            transform: scale(1.02);
+        .loading.show {
+            display: block;
         }
 
-        .info-box {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
         }
 
-        .info-item {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 15px;
-        }
-
-        .info-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .info-icon {
-            font-size: 20px;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
-
-        .info-text {
-            font-size: 15px;
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.5;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .footer {
             text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 14px;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #0a0e27;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .error-msg {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-            color: #ff4444;
-            text-align: center;
-            display: none;
-        }
-
-        .error-msg.active {
-            display: block;
+            margin-top: 20px;
+            color: #888;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">ARES</div>
-            <div class="subtitle">ARES TOOL V23 - OPTIMIZED FIX</div>
-            <div class="description">
-                Nhận key miễn phí với hiệu lực 24 giờ để sử dụng ARES Tool
+        <h1>🔑 Hệ thống Key</h1>
+        <p class="subtitle">Vượt link để nhận key miễn phí</p>
+
+        <div class="step">
+            <div class="step-title">📋 Hướng dẫn:</div>
+            <div class="step-content">
+                1. Nhấn "Lấy Link" để nhận link rút gọn<br>
+                2. Nhấn vào link và vượt qua trang quảng cáo<br>
+                3. Đợi đủ 15 giây (có đồng hồ đếm ngược)<br>
+                4. Nhấn "Lấy Key" để nhận key riêng của bạn<br>
+                5. Key có hiệu lực 24 giờ
             </div>
         </div>
 
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div class="status-item">
-                <div class="status-icon">✅</div>
-                <div class="status-text">Hệ thống hoạt động</div>
-            </div>
-            <div class="status-item">
-                <div class="status-icon">🔑</div>
-                <div class="status-text">Key 24 giờ</div>
-            </div>
+        <div class="message" id="message"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Đang xử lý...</p>
         </div>
 
-        <!-- Main Card -->
-        <div class="main-card">
-            <div class="card-title">🎁 Nhận Key Miễn Phí</div>
-            <div class="card-description">
-                Click vào nút bên dưới để nhận link. Sau khi vượt link quảng cáo, 
-                bạn sẽ tự động nhận được key riêng có hiệu lực 24 giờ.
+        <div class="link-display" id="linkDisplay">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span style="font-size: 30px;">✅</span><br>
+                <strong style="color: #2196F3; font-size: 16px;">Link sẵn sàng!</strong>
             </div>
-
-            <button class="get-key-btn" id="getKeyBtn" onclick="getLink()">
-                <span id="btnText">🔑 Lấy Key Ngay</span>
-            </button>
-
-            <div class="error-msg" id="errorMsg"></div>
-
-            <!-- Link Box -->
-            <div class="link-box" id="linkBox">
-                <div class="link-title">🔗 Link Của Bạn</div>
-                <div class="link-instruction">
-                    Click vào nút bên dưới để vượt link quảng cáo Link4m. 
-                    <strong>Sau khi vượt xong, bạn sẽ tự động nhận được key!</strong>
-                </div>
-                <a class="link-button" id="link4mButton" href="#" target="_blank">
-                    ↗ Vượt Link Để Nhận Key
+            
+            <div style="text-align: center;">
+                <a href="#" id="shortLink" target="_blank" class="link-url">
+                    🔗 Nhấn vào đây để vượt link
                 </a>
             </div>
+
+            <div class="timer" id="timerBox" style="display:none;">
+                <div class="timer-title">⏰ Vui lòng đợi:</div>
+                <div class="timer-value" id="timerValue">15</div>
+                <div style="font-size: 12px; margin-top: 5px; color: #856404;">
+                    giây nữa để lấy key
+                </div>
+            </div>
+
+            <p style="text-align: center; color: #666; font-size: 14px; margin-top: 15px;">
+                💡 Sau khi vượt link xong, đợi đồng hồ về 0 rồi nhấn "Lấy Key"
+            </p>
         </div>
 
-        <!-- Info Box -->
-        <div class="info-box">
-            <div class="info-item">
-                <div class="info-icon">⏰</div>
-                <div class="info-text">
-                    Key riêng cho từng người • Hiệu lực 24 giờ • ARES Tool V27
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">🔒</div>
-                <div class="info-text">
-                    Key chỉ hoạt động trên thiết bị này. Không chia sẻ key cho người khác.
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">💡</div>
-                <div class="info-text">
-                    Sau khi vượt link, bạn sẽ được chuyển đến trang hiển thị key tự động.
-                </div>
-            </div>
+        <div class="key-display" id="keyDisplay">
+            <p style="font-size: 18px; margin-bottom: 5px;">🎉 Key của bạn:</p>
+            <div class="key-value" id="keyValue"></div>
+            <p style="font-size: 12px; margin-top: 10px; opacity: 0.9;" id="keyExpire"></p>
         </div>
 
-        <!-- Footer -->
+        <button class="btn btn-primary" id="getLinkBtn" onclick="getLink()">
+            📎 Lấy Link
+        </button>
+
+        <button class="btn btn-success" id="getKeyBtn" onclick="getKey()" disabled>
+            🔑 Lấy Key
+        </button>
+
         <div class="footer">
-            Developed with ❤️ for ARES Community
+            Key riêng cho từng người • Hiệu lực 24 giờ
         </div>
     </div>
 
     <script>
+        let sessionToken = localStorage.getItem('sessionToken');
+        let countdownInterval = null;
+
+        function showMessage(text, type = 'info') {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = text;
+            msgEl.className = `message ${type} show`;
+            setTimeout(() => {
+                msgEl.classList.remove('show');
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function startCountdown(seconds) {
+            let remaining = seconds;
+            document.getElementById('timerBox').style.display = 'block';
+            document.getElementById('timerValue').textContent = remaining;
+            document.getElementById('getKeyBtn').disabled = true;
+
+            // Clear interval cũ nếu có
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            countdownInterval = setInterval(() => {
+                remaining--;
+                document.getElementById('timerValue').textContent = remaining;
+
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('timerBox').style.display = 'none';
+                    document.getElementById('getKeyBtn').disabled = false;
+                    showMessage('✅ Đã đủ thời gian! Bạn có thể nhấn "Lấy Key" bây giờ.', 'success');
+                }
+            }, 1000);
+        }
+
         async function getLink() {
-            const btn = document.getElementById('getKeyBtn');
-            const btnText = document.getElementById('btnText');
-            const linkBox = document.getElementById('linkBox');
-            const link4mButton = document.getElementById('link4mButton');
-            const errorMsg = document.getElementById('errorMsg');
-
-            // Reset error
-            errorMsg.classList.remove('active');
-
-            // Disable button
-            btn.disabled = true;
-            btnText.innerHTML = '<span class="loading"></span> Đang tạo link...';
-
+            showLoading(true);
+            document.getElementById('getLinkBtn').disabled = true;
+            
             try {
                 const response = await fetch('/api/get_link');
                 const data = await response.json();
-
+                
                 if (data.status === 'ok') {
-                    // Hiển thị link box
-                    linkBox.classList.add('active');
-                    link4mButton.href = data.url;
-
-                    // Update button
-                    btnText.textContent = '✅ Đã tạo link thành công';
-
-                    // Scroll to link box
-                    linkBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    sessionToken = data.token;
+                    localStorage.setItem('sessionToken', sessionToken);
+                    
+                    document.getElementById('shortLink').href = data.url;
+                    document.getElementById('linkDisplay').classList.add('show');
+                    
+                    showMessage('✅ Link sẵn sàng! Hãy vượt link và đợi 15 giây.', 'success');
+                    
+                    // Bắt đầu đếm ngược 15 giây
+                    startCountdown(15);
+                    
+                    document.getElementById('linkDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    throw new Error(data.msg || 'Không thể tạo link');
+                    showMessage('❌ ' + data.msg, 'error');
+                    document.getElementById('getLinkBtn').disabled = false;
                 }
             } catch (error) {
-                errorMsg.textContent = '❌ Lỗi: ' + error.message;
-                errorMsg.classList.add('active');
-                btnText.textContent = '🔑 Lấy Key Ngay';
-                btn.disabled = false;
+                showMessage('❌ Lỗi kết nối: ' + error.message, 'error');
+                document.getElementById('getLinkBtn').disabled = false;
+            } finally {
+                showLoading(false);
             }
+        }
+
+        async function getKey() {
+            if (!sessionToken) {
+                showMessage('❌ Vui lòng lấy link trước!', 'error');
+                return;
+            }
+
+            showLoading(true);
+            document.getElementById('getKeyBtn').disabled = true;
+            
+            try {
+                const response = await fetch(`/api/get_key?token=${sessionToken}`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('keyValue').textContent = data.key;
+                    document.getElementById('keyExpire').textContent = 'Hết hạn: ' + data.expire_at;
+                    document.getElementById('keyDisplay').classList.add('show');
+                    showMessage('🎉 Lấy key thành công!', 'success');
+                    
+                    // Auto copy
+                    try {
+                        navigator.clipboard.writeText(data.key);
+                        setTimeout(() => {
+                            showMessage('📋 Key đã được copy vào clipboard!', 'info');
+                        }, 1000);
+                    } catch (e) {}
+                    
+                    document.getElementById('keyDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    showMessage('❌ ' + data.msg, 'error');
+                    document.getElementById('getKeyBtn').disabled = false;
+                }
+            } catch (error) {
+                showMessage('❌ Lỗi kết nối: ' + error.message, 'error');
+                document.getElementById('getKeyBtn').disabled = false;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Khôi phục countdown nếu refresh trang
+        if (sessionToken) {
+            document.getElementById('getKeyBtn').disabled = false;
+            showMessage('💡 Bạn đã lấy link trước đó. Nếu đủ 15 giây, hãy nhấn "Lấy Key"', 'info');
         }
     </script>
 </body>
