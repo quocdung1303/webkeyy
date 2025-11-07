@@ -263,6 +263,155 @@ def get_key():
             color: #00ff9d;
             font-family: monospace;
             font-size: 14px;
+@app.route("/get_key", methods=['POST'])
+def get_key():
+    cleanup_old()
+    
+    token = gen_token()
+    key = gen_key()
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    
+    # URL đích (trang hiển thị key)
+    dest = f"https://areskey.vercel.app/k/{token}"
+    
+    # ✅ GỌI LINK4M API
+    link4m_api = f"https://link4m.co/st?api={LINK4M_KEY}&url={dest}"
+    
+    print(f"[INFO] Calling Link4m: {link4m_api}")
+    
+    try:
+        resp = requests.get(link4m_api, timeout=15, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
+        
+        print(f"[DEBUG] Link4m Status: {resp.status_code}")
+        print(f"[DEBUG] Link4m Response: {resp.text}")
+        
+        short_url = resp.text.strip()
+        
+        # ✅ VALIDATE: Link4m phải trả về link rút gọn
+        if not short_url.startswith('https://link4m.co/'):
+            print(f"[ERROR] Link4m không trả về link hợp lệ: {short_url}")
+            # Nếu lỗi → hiển thị lỗi cho user
+            return f'''
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lỗi - ARES</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }}
+        .container {{ max-width: 500px; width: 100%; text-align: center; }}
+        h1 {{ color: #ff5252; margin-bottom: 20px; }}
+        p {{ color: #ccc; margin-bottom: 20px; }}
+        a {{ color: #00ff9d; text-decoration: none; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>❌ Lỗi Link4m</h1>
+        <p>Link4m API không phản hồi đúng. Vui lòng thử lại sau.</p>
+        <p>Response: {short_url[:200]}</p>
+        <a href="/">← Quay lại trang chủ</a>
+    </div>
+</body>
+</html>
+            '''
+        
+        print(f"[SUCCESS] Link4m URL: {short_url}")
+        
+        # Lưu data
+        data = load_data()
+        data["sessions"][token] = {{
+            "unique_key": key,
+            "created_at": time.time(),
+            "verified": False,
+            "owner_ip": ip
+        }}
+        data["keys"][key] = {{
+            "created_at": time.time(),
+            "ip_list": [],
+            "max_ips": 3,
+            "check_count": 0,
+            "last_check": time.time()
+        }}
+        save_data(data)
+        
+        # ✅ HIỂN THỊ LINK LINK4M CHO USER
+        return f'''
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link của bạn - ARES</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }}
+        .container {{ max-width: 500px; width: 100%; }}
+        .banner {{
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: rgba(0, 255, 157, 0.1);
+            border: 2px solid #00ff9d;
+            border-radius: 15px;
+        }}
+        h1 {{
+            font-size: 56px;
+            color: #00ff9d;
+            text-shadow: 0 0 30px #00ff9d;
+            letter-spacing: 12px;
+            margin-bottom: 10px;
+        }}
+        .subtitle {{
+            font-size: 13px;
+            color: #ffc107;
+            letter-spacing: 3px;
+        }}
+        .box {{
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+        }}
+        h2 {{ color: #00ff9d; margin-bottom: 15px; font-size: 24px; }}
+        p {{ color: #ccc; margin-bottom: 25px; line-height: 1.6; }}
+        .link-box {{
+            display: flex;
+            gap: 10px;
+            margin: 25px 0;
+        }}
+        .link-box input {{
+            flex: 1;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #00ff9d;
+            border-radius: 8px;
+            color: #00ff9d;
+            font-family: monospace;
+            font-size: 13px;
         }}
         .btn {{
             background: linear-gradient(135deg, #00ff9d, #00cc7a);
@@ -297,10 +446,10 @@ def get_key():
             <h2>✅ Link của bạn đã sẵn sàng!</h2>
             <p>Vui lòng vượt link bên dưới để nhận License Key:</p>
             <div class="link-box">
-                <input type="text" id="link" value="{short}" readonly>
+                <input type="text" id="link" value="{short_url}" readonly>
                 <button class="btn btn-copy" onclick="copy()">📋 Copy</button>
             </div>
-            <a href="{short}" target="_blank" class="btn">🔗 Mở Link</a>
+            <a href="{short_url}" target="_blank" class="btn">🔗 Mở Link</a>
         </div>
     </div>
     <script>
@@ -313,8 +462,10 @@ def get_key():
 </body>
 </html>
         '''
+        
     except Exception as e:
-        return f'<h1>Lỗi: {e}</h1>'
+        print(f"[ERROR] Exception: {e}")
+        return f'<h1 style="color:#fff;text-align:center;padding:50px;">Lỗi: {e}</h1><p style="color:#ccc;text-align:center;"><a href="/" style="color:#00ff9d;">Quay lại</a></p>'
 
 @app.route("/k/<token>")
 def show_key(token):
