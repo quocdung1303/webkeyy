@@ -41,7 +41,7 @@ def save_data(data):
         json.dump(data, f, indent=2)
 
 def cleanup_old_sessions():
-    """Xóa session cũ hơn 24 giờ - TỰ ĐỘNG"""
+    """Xóa session cũ hơn 24 giờ"""
     data = load_data()
     current_time = time.time()
     sessions_to_delete = []
@@ -79,7 +79,7 @@ def get_link():
     
     session_token = generate_session_token()
     unique_key = generate_key()
-    destination_url = "https://webkeyy.vercel.app"
+    destination_url = "https://areskey.vercel.app"
     
     try:
         create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
