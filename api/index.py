@@ -71,6 +71,15 @@ def home():
     except:
         return "index.html not found"
 
+@app.route("/huong-dan")
+def huong_dan():
+    """Trang hướng dẫn"""
+    try:
+        with open('folder/huongdan.html', 'r', encoding='utf-8') as f:
+            return f.read()
+    except:
+        return "huongdan.html not found"
+
 @app.route("/api/get_link")
 def get_link():
     """Tạo link rút gọn Link4m"""
