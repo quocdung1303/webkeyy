@@ -151,33 +151,6 @@
             line-height: 1.5;
         }
 
-        .timer-box {
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            margin: 20px 0;
-            display: none;
-        }
-
-        .timer-box.show {
-            display: block;
-        }
-
-        .timer-label {
-            color: #ffc107;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .timer-value {
-            font-size: 48px;
-            font-weight: 900;
-            color: #ffc107;
-            font-family: 'Courier New', monospace;
-        }
-
         .btn {
             width: 100%;
             padding: 16px;
@@ -327,10 +300,6 @@
             color: #4a5568;
             font-size: 12px;
         }
-
-        .hidden {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -342,7 +311,6 @@
         
         <div class="status-bar">
             <div class="status-badge">✓ Hệ thống hoạt động</div>
-            <div class="status-badge" id="activeKeys">1 key đang hoạt động</div>
         </div>
     </div>
 
@@ -365,7 +333,7 @@
         <div class="warning-box">
             <div class="warning-box-icon">⏱</div>
             <div class="warning-box-text">
-                Vui lòng hoàn thành bước vượt quảng cáo trước khi nhận key
+                Vui lòng vượt link để lấy key
             </div>
         </div>
 
@@ -375,12 +343,6 @@
                 <span>Vượt Link Link4m</span>
             </button>
         </a>
-
-        <div class="timer-box" id="timerBox">
-            <div class="timer-label">⏱ Thời gian chờ</div>
-            <div class="timer-value" id="timerValue">15</div>
-            <div style="color: #a0aec0; font-size: 13px; margin-top: 5px;">giây</div>
-        </div>
     </div>
 
     <!-- Card Bước 2: Nhận Key -->
@@ -389,18 +351,18 @@
         <div class="card-icon">🔑</div>
         <div class="card-title">Nhận Key Tự Động</div>
         <div class="card-text">
-            Sau khi vượt link thành công, hệ thống sẽ tự động tạo key cho bạn. Key có hiệu lực 24 giờ.
+            Sau khi vượt link thành công, nhấn nút để nhận key.
         </div>
 
         <div class="warning-box" id="waitingWarning">
             <div class="warning-box-icon">ℹ</div>
             <div class="warning-box-text">
-                Key sẽ xuất hiện ở đây sau khi bạn hoàn thành bước 1
+                Key sẽ xuất hiện sau khi bạn vượt link
             </div>
         </div>
 
         <div class="key-display" id="keyDisplay">
-            <div class="key-label">🎉 Key của bạn:</div>
+            <div class="key-label">🎉 Cảm ơn bạn đã vượt link! Đây là key của bạn:</div>
             <div class="key-value" id="keyValue" onclick="copyKey()">-</div>
             <div class="key-expire" id="keyExpire">Hết hạn: -</div>
         </div>
@@ -417,12 +379,11 @@
     </button>
 
     <div class="footer">
-        Key riêng cho từng người • Hiệu lực 24 giờ • ARES Tool V27
+        Key riêng cho từng người • Hiệu lực 24 giờ • Tối đa 3 IP • ARES Tool V27
     </div>
 
     <script>
         let sessionToken = localStorage.getItem('sessionToken');
-        let countdownInterval = null;
 
         function showMessage(text, type = 'info') {
             const msgEl = document.getElementById('message');
@@ -438,26 +399,12 @@
         }
 
         function startCountdown(seconds) {
-            let remaining = seconds;
-            document.getElementById('timerBox').classList.add('show');
-            document.getElementById('timerValue').textContent = remaining;
             document.getElementById('getKeyBtn').disabled = true;
-
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-
-            countdownInterval = setInterval(() => {
-                remaining--;
-                document.getElementById('timerValue').textContent = remaining;
-
-                if (remaining <= 0) {
-                    clearInterval(countdownInterval);
-                    document.getElementById('timerBox').classList.remove('show');
-                    document.getElementById('getKeyBtn').disabled = false;
-                    showMessage('✅ Đã đủ thời gian! Nhấn "Lấy Key" để nhận key.', 'success');
-                }
-            }, 1000);
+            
+            setTimeout(() => {
+                document.getElementById('getKeyBtn').disabled = false;
+                showMessage('✅ Cảm ơn bạn đã vượt link! Nhấn "Lấy Key" để nhận key.', 'success');
+            }, seconds * 1000);
         }
 
         async function getLink() {
@@ -475,9 +422,9 @@
                     document.getElementById('shortLink').href = data.url;
                     document.getElementById('linkButton').disabled = false;
                     
-                    showMessage('✅ Link sẵn sàng! Nhấn "Vượt Link Link4m" và đợi 15 giây.', 'success');
+                    showMessage('✅ Link sẵn sàng! Hãy vượt link.', 'success');
                     
-                    startCountdown(15);
+                    startCountdown(60);
                     
                     document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
@@ -511,12 +458,12 @@
                     document.getElementById('keyDisplay').classList.add('show');
                     document.getElementById('waitingWarning').style.display = 'none';
                     
-                    showMessage('🎉 Lấy key thành công!', 'success');
+                    showMessage('🎉 Cảm ơn bạn đã vượt link! Đây là key của bạn.', 'success');
                     
                     try {
                         await navigator.clipboard.writeText(data.key);
                         setTimeout(() => {
-                            showMessage('📋 Key đã được copy tự động!', 'info');
+                            showMessage('📋 Key đã copy tự động!', 'info');
                         }, 1000);
                     } catch (e) {}
                     
@@ -545,8 +492,8 @@
 
         if (sessionToken) {
             document.getElementById('getKeyBtn').disabled = false;
-            showMessage('💡 Bạn đã lấy link trước đó. Nếu đủ 15 giây, hãy nhấn "Lấy Key"', 'info');
+            showMessage('💡 Cảm ơn bạn! Hãy nhấn "Lấy Key" để nhận key.', 'info');
         }
     </script>
 </body>
-            </html>
+</html>
