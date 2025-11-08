@@ -137,15 +137,13 @@ def get_key():
         del data["sessions"][session_token]
         save_data(data)
         return jsonify({"status": "error", "msg": "Session đã hết hạn (quá 24 giờ)"})
-    
-    # KIỂM TRA: Phải đợi ít nhất 15 giây
+    # KIỂM TRA: Phải đợi ít nhất 60 giây
     time_elapsed = current_time - created_at
-    if time_elapsed < 15:
-        remaining = int(15 - time_elapsed)
-        return jsonify({
-            "status": "error",
-            "msg": f"Vui lòng vượt link và đợi thêm {remaining} giây nữa"
-        })
+    if time_elapsed < 60:
+    return jsonify({
+        "status": "error",
+        "msg": "Vui lòng vượt link"
+    })
     
     # Đủ thời gian → Cho phép lấy key
     unique_key = session.get("unique_key")
