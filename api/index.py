@@ -131,7 +131,7 @@ def get_key():
         return jsonify({"status": "error", "msg": "Session đã hết hạn (quá 24 giờ)"})
     
     time_elapsed = current_time - created_at
-    if time_elapsed < 60:
+    if time_elapsed < 80:
         return jsonify({"status": "error", "msg": "Vui lòng vượt link"})
     
     unique_key = session.get("unique_key")
