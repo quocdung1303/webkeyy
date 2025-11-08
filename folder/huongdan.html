@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARES Tool - Hướng Dẫn Cài Đặt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0e1a;
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px 30px 20px;
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.05) 0%, rgba(0, 180, 140, 0.05) 100%);
+        }
+
+        .logo {
+            font-size: 72px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #00ff9d;
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #ffc107;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .description {
+            color: #a0aec0;
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .social-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .social-btn.youtube {
+            background: rgba(255, 0, 0, 0.1);
+            border: 2px solid #ff0000;
+            color: #ff0000;
+        }
+
+        .social-btn.youtube:hover {
+            background: rgba(255, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .social-btn.tiktok {
+            background: rgba(0, 242, 234, 0.1);
+            border: 2px solid #00f2ea;
+            color: #00f2ea;
+        }
+
+        .social-btn.tiktok:hover {
+            background: rgba(0, 242, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .social-btn.zalo {
+            background: rgba(0, 138, 255, 0.1);
+            border: 2px solid #008aff;
+            color: #008aff;
+        }
+
+        .social-btn.zalo:hover {
+            background: rgba(0, 138, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .key-btn-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .key-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #00ff9d 0%, #00b48c 100%);
+            color: #0a0e1a;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 255, 157, 0.3);
+        }
+
+        .key-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 255, 157, 0.5);
+        }
+
+        .section {
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.05) 0%, rgba(0, 180, 140, 0.05) 100%);
+            border: 2px solid rgba(0, 255, 157, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00ff9d, #00b48c, #00ff9d);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00ff9d;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #ffc107;
+            color: #0a0e1a;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .section-text {
+            color: #a0aec0;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .code-block {
+            background: #1a1f2e;
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+            font-family: 'Courier New', monospace;
+            color: #00ff9d;
+            font-size: 14px;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 255, 157, 0.2);
+            border: 1px solid #00ff9d;
+            color: #00ff9d;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(0, 255, 157, 0.3);
+        }
+
+        .error-box {
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .error-title {
+            color: #ff4d4d;
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .error-text {
+            color: #ffb3b3;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .solution {
+            color: #00ff9d;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #4a5568;
+            font-size: 12px;
+        }
+
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .warning-icon {
+            color: #ffc107;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            color: #ffc107;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">ARES</div>
+        <div class="subtitle">POWERED BY ARES TOOL V27</div>
+        <div class="description">Hướng dẫn chi tiết cách cài đặt và sử dụng ARES TOOL trên Android (Termux)</div>
+        
+        <div class="social-links">
+            <a href="https://youtube.com/@arestool-vn?si=s0zlsxlYYX2RYGb9" target="_blank" class="social-btn youtube">
+                <span>▶</span>
+                <span>Kênh YouTube</span>
+            </a>
+            <a href="https://www.tiktok.com/@arestoolvn?_r=1&_t=ZS-91CE0K6k9lS" target="_blank" class="social-btn tiktok">
+                <span>♪</span>
+                <span>Kênh TikTok</span>
+            </a>
+            <a href="https://zalo.me/g/cijkbp749" target="_blank" class="social-btn zalo">
+                <span>💬</span>
+                <span>Nhóm Zalo</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="key-btn-container">
+        <a href="/" class="key-btn">
+            <span>🔑</span>
+            <span>LẤY KEY MIỄN PHÍ</span>
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">1</span>
+                Giới thiệu
+            </h2>
+            <p class="section-text">
+                Chào mừng bạn đến với hướng dẫn chi tiết về cách thiết lập và chạy tool ARES TOOL trên Android bằng ứng dụng Termux. Termux là một trình giả lập terminal mạnh mẽ cho phép bạn sử dụng các công cụ dòng lệnh Linux trên điện thoại của mình.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">2</span>
+                Yêu cầu và cài đặt Termux
+            </h2>
+            <p class="section-text">
+                Đầu tiên, bạn cần tải và cài đặt Termux từ <strong>F-Droid</strong>, vì phiên bản trên Google Play Store không được cập nhật thường xuyên.
+            </p>
+            <div class="warning-box">
+                <div class="warning-icon">⚠</div>
+                <div class="warning-text">
+                    <strong>Lưu ý:</strong> Tải Termux từ F-Droid tại <a href="https://f-droid.org/en/packages/com.termux/" target="_blank" style="color: #00ff9d;">https://f-droid.org/en/packages/com.termux/</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">3</span>
+                Cài đặt thư viện cần thiết
+            </h2>
+            <p class="section-text">
+                Trong Termux, bạn nhập các lệnh sau để cài đặt Python và các thư viện cần thiết.
+            </p>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">1. Cập nhật các gói hệ thống:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pkg update')">Copy</button>
+                <pre>pkg update</pre>
+            </div>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">2. Cài đặt Python:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pkg install python')">Copy</button>
+                <pre>pkg install python</pre>
+            </div>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">3. Cài đặt thư viện Python:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pip install requests beautifulsoup4 colorama')">Copy</button>
+                <pre>pip install requests beautifulsoup4 colorama</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">4</span>
+                Tải tool ARES
+            </h2>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">1. Cài đặt curl:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'pkg install curl')">Copy</button>
+                <pre>pkg install curl</pre>
+            </div>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">2. Tải file tool:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py')">Copy</button>
+                <pre>curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">5</span>
+                Chạy tool
+            </h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'python toolares.py')">Copy</button>
+                <pre>python toolares.py</pre>
+            </div>
+            <div class="warning-box">
+                <div class="warning-icon">🔑</div>
+                <div class="warning-text">
+                    Tool sẽ yêu cầu nhập key. Lấy key miễn phí tại <a href="/" style="color: #00ff9d;">https://areskey.vercel.app</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">6</span>
+                Lỗi thường gặp
+            </h2>
+
+            <div class="error-box">
+                <div class="error-title">Lỗi 1: command not found: curl</div>
+                <div class="error-text">Lỗi này xảy ra khi gói 'curl' chưa được cài đặt.</div>
+                <div class="solution">Cách khắc phục:</div>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this, 'pkg install curl')">Copy</button>
+                    <pre>pkg install curl</pre>
+                </div>
+            </div>
+
+            <div class="error-box">
+                <div class="error-title">Lỗi 2: No module named 'requests'</div>
+                <div class="error-text">Thiếu thư viện Python.</div>
+                <div class="solution">Cách khắc phục:</div>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this, 'pip install requests beautifulsoup4 colorama')">Copy</button>
+                    <pre>pip install requests beautifulsoup4 colorama</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="key-btn-container">
+            <a href="/" class="key-btn">
+                <span>🔑</span>
+                <span>LẤY KEY MIỄN PHÍ NGAY</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 ARES Tool V27 - Hệ thống key miễn phí 24h</p>
+    </div>
+
+    <script>
+        function copyCode(button, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.style.background = 'rgba(0, 255, 157, 0.3)';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.style.background = 'rgba(0, 255, 157, 0.2)';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+  </html>
