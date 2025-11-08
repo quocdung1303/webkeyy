@@ -166,7 +166,7 @@ def get_key():
 
 @app.route("/api/check_key")
 def check_key():
-    """Kiểm tra key có hợp lệ không"""
+    """Kiểm tra key có hợp lệ không - Tối đa 3 IP"""
     key = request.args.get("key")
     
     if not key:
@@ -175,25 +175,49 @@ def check_key():
     data = load_data()
     current_time = time.time()
     
+    # Lấy IP thật từ header (Vercel forward IP qua X-Forwarded-For)
+    current_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+    
     # Tìm key trong tất cả sessions
     for session_token, session_data in data.get("sessions", {}).items():
         if session_data.get("unique_key") == key:
-            # ✅ KIỂM TRA HẾT HẠN
             created_at = session_data.get("created_at", 0)
+            
+            # ✅ KIỂM TRA HẾT HẠN
             if current_time - created_at > 86400:
-                # Xóa key hết hạn ngay
                 del data["sessions"][session_token]
                 save_data(data)
                 return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
+            
+            # ✅ KIỂM TRA IP - TỐI ĐA 3 IP
+            ip_list = session_data.get("ip_list", [])
+            max_ips = 3  # Tối đa 3 IP
+            
+            if current_ip not in ip_list:
+                # IP mới - kiểm tra đã đủ 3 IP chưa
+                if len(ip_list) >= max_ips:
+                    return jsonify({
+                        "status": "fail",
+                        "msg": f"Key đã đạt giới hạn {max_ips} IP. Vui lòng lấy key mới."
+                    })
+                
+                # Thêm IP mới vào danh sách
+                ip_list.append(current_ip)
+                data["sessions"][session_token]["ip_list"] = ip_list
+                save_data(data)
             
             # Key hợp lệ
             expire_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(created_at + 86400))
             return jsonify({
                 "status": "ok",
                 "msg": "Key hợp lệ",
+                "date": expire_at,
                 "expire_at": expire_at,
                 "is_unique": True
             })
+    
+    # Không tìm thấy key
+    return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
     
     # Không tìm thấy key
     return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
