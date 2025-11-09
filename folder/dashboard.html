@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARES - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0e1a;
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+
+        .logo {
+            font-size: 56px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #00ff9d;
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #ffc107;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid #00ff9d;
+            color: #00ff9d;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 255, 157, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.05) 0%, rgba(0, 180, 140, 0.05) 100%);
+            border: 2px solid rgba(0, 255, 157, 0.2);
+            border-radius: 16px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00ff9d, #00b48c, #00ff9d);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #a0aec0;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 900;
+            color: #00ff9d;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stat-value.yellow {
+            color: #ffc107;
+        }
+
+        .stat-value.blue {
+            color: #64c8ff;
+        }
+
+        .table-card {
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.05) 0%, rgba(0, 180, 140, 0.05) 100%);
+            border: 2px solid rgba(0, 255, 157, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00ff9d, #00b48c, #00ff9d);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        .table-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00ff9d;
+            margin-bottom: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .data-table th {
+            background: rgba(0, 255, 157, 0.1);
+            color: #00ff9d;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 2px solid rgba(0, 255, 157, 0.3);
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.1);
+            color: #a0aec0;
+            font-size: 13px;
+        }
+
+        .data-table tr:hover {
+            background: rgba(0, 255, 157, 0.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.success {
+            background: rgba(0, 255, 157, 0.2);
+            color: #00ff9d;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-badge.expired {
+            background: rgba(255, 77, 77, 0.2);
+            color: #ff4d4d;
+        }
+
+        .refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: #00ff9d;
+            color: #0a0e1a;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .refresh-btn:hover {
+            background: #00ffaa;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #00ff9d;
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 255, 157, 0.1);
+            border-top: 3px solid #00ff9d;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #a0aec0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #4a5568;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">ARES</div>
+        <div class="subtitle">DASHBOARD - THỐNG KÊ HỆ THỐNG</div>
+        
+        <div class="nav-links">
+            <a href="/" class="nav-btn">
+                <span>🏠</span>
+                <span>Trang chủ</span>
+            </a>
+            <a href="/huong-dan" class="nav-btn">
+                <span>📖</span>
+                <span>Hướng dẫn</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <button class="refresh-btn" onclick="loadStats()">
+            <span>🔄</span>
+            <span>Làm mới dữ liệu</span>
+        </button>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Đang tải dữ liệu...</p>
+        </div>
+
+        <div id="statsContent">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🔗</div>
+                    <div class="stat-label">Tổng lượt tạo link</div>
+                    <div class="stat-value" id="totalLinks">0</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-label">Đã vượt link thành công</div>
+                    <div class="stat-value yellow" id="totalCompleted">0</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-label">Đang chờ vượt link</div>
+                    <div class="stat-value blue" id="totalPending">0</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">🔑</div>
+                    <div class="stat-label">Key đang hoạt động</div>
+                    <div class="stat-value" id="totalActive">0</div>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <h2 class="table-title">📊 Danh sách phiên gần đây</h2>
+                <div id="tableContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 ARES Tool V27 - Dashboard Admin</p>
+        <p style="margin-top: 5px;">Dữ liệu cập nhật real-time</p>
+    </div>
+
+    <script>
+        async function loadStats() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('statsContent').style.opacity = '0.5';
+
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    // Update stats
+                    document.getElementById('totalLinks').textContent = data.total_sessions || 0;
+                    document.getElementById('totalCompleted').textContent = data.completed || 0;
+                    document.getElementById('totalPending').textContent = data.pending || 0;
+                    document.getElementById('totalActive').textContent = data.active || 0;
+
+                    // Update table
+                    renderTable(data.sessions || []);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('statsContent').style.opacity = '1';
+            }
+        }
+
+        function renderTable(sessions) {
+            const container = document.getElementById('tableContainer');
+
+            if (sessions.length === 0) {
+                container.innerHTML = '<div class="empty-state">📭 Chưa có dữ liệu</div>';
+                return;
+            }
+
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Thời gian tạo</th>
+                            <th>Key</th>
+                            <th>Trạng thái</th>
+                            <th>Số IP</th>
+                            <th>Hết hạn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            sessions.forEach(session => {
+                const statusClass = session.status === 'completed' ? 'success' : 
+                                  session.status === 'expired' ? 'expired' : 'pending';
+                const statusText = session.status === 'completed' ? 'Đã vượt link' : 
+                                 session.status === 'expired' ? 'Hết hạn' : 'Chờ vượt link';
+
+                tableHTML += `
+                    <tr>
+                        <td>${session.created_at}</td>
+                        <td><code style="color: #00ff9d;">${session.key.substring(0, 12)}...</code></td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${session.ip_count}/3</td>
+                        <td>${session.expire_at}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        // Auto refresh every 30 seconds
+        setInterval(loadStats, 30000);
+
+        // Load on page load
+        loadStats();
+    </script>
+</body>
+  </html>
