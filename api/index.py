@@ -6,6 +6,7 @@ import random
 import string
 import secrets
 import requests
+import hashlib
 
 app = Flask(__name__)
 
@@ -88,7 +89,10 @@ def get_link():
     
     session_token = generate_session_token()
     unique_key = generate_key()
-    destination_url = "https://areskey.vercel.app"
+    
+    # Tạo URL unique cho mỗi session
+    short_hash = hashlib.md5(session_token.encode()).hexdigest()[:8]
+    destination_url = f"https://areskey.vercel.app?s={short_hash}"
     
     try:
         create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
