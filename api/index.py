@@ -10,7 +10,7 @@ import hashlib
 
 app = Flask(__name__)
 
-LINK4M_API = "https://link4m.co/st"
+LINK4M_API = "https://link4m.co/api-shorten/v2"
 LINK4M_KEY = os.getenv("LINK4M_KEY")
 
 KEY_FILE = "/tmp/key.json"
@@ -265,35 +265,42 @@ def get_stats():
 
 @app.route("/api/get_link")
 def get_link():
-    """Tạo link Link4m trực tiếp"""
+    """Tạo link rút gọn Link4m"""
     if not LINK4M_KEY:
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
     session_token = generate_session_token()
     unique_key = generate_key()
     
-    # URL đích - trang chủ của bạn
-    destination_url = "https://areskey.vercel.app"
+    short_hash = hashlib.md5(session_token.encode()).hexdigest()[:8]
+    destination_url = f"https://areskey.vercel.app?s={short_hash}"
     
-    # ✅ Tạo link Link4m trực tiếp (không gọi API)
-    link4m_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={destination_url}"
-    
-    # Lưu session
-    data = load_data()
-    data["sessions"][session_token] = {
-        "unique_key": unique_key,
-        "created_at": time.time(),
-        "link_clicked": False,
-        "ip_list": []
-    }
-    save_data(data)
-    
-    return jsonify({
-        "status": "ok",
-        "message": "Vui lòng vượt link",
-        "url": link4m_url,
-        "token": session_token
-    })
+    try:
+        create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
+        res = requests.get(create_url, timeout=10).json()
+        
+        if res.get("status") != "success" or not res.get("shortenedUrl"):
+            return jsonify({"status": "error", "msg": "Không tạo được link rút gọn"})
+        
+        short_url = res["shortenedUrl"]
+        
+        data = load_data()
+        data["sessions"][session_token] = {
+            "unique_key": unique_key,
+            "created_at": time.time(),
+            "link_clicked": False,
+            "ip_list": []
+        }
+        save_data(data)
+        
+        return jsonify({
+            "status": "ok",
+            "message": "Vui lòng vượt link",
+            "url": short_url,
+            "token": session_token
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "msg": f"Lỗi: {str(e)}"})
 
 @app.route("/api/get_key")
 def get_key():
@@ -379,4 +386,4 @@ def check_key():
                 "is_unique": True
             })
     
-    return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ")
+    return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
