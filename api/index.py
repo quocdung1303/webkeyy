@@ -5,6 +5,7 @@ import time
 import random
 import string
 import secrets
+import requests
 
 app = Flask(__name__)
 
@@ -88,7 +89,7 @@ def huong_dan():
 
 @app.route("/api/get_link")
 def get_link():
-    """Tạo link Link4m trực tiếp"""
+    """Tạo link rút gọn Link4m có antibot"""
     try:
         session_token = generate_session_token()
         unique_key = generate_key()
@@ -96,8 +97,17 @@ def get_link():
         # URL đích
         destination_url = "https://areskey.vercel.app"
         
-        # Link Link4m trực tiếp
-        link4m_url = f"https://link4m.co/st?api={LINK4M_KEY}&url={destination_url}"
+        # GỌI API Link4m endpoint v2
+        api_url = f"https://link4m.co/api-shorten/v2?api={LINK4M_KEY}&url={destination_url}"
+        
+        response = requests.get(api_url, timeout=10)
+        result = response.json()
+        
+        # Kiểm tra response
+        if result.get("status") == "success" and result.get("shortenedUrl"):
+            short_url = result["shortenedUrl"]
+        else:
+            return jsonify({"status": "error", "msg": "Không tạo được link rút gọn"})
         
         # Lưu session
         data = load_data()
@@ -112,7 +122,7 @@ def get_link():
         return jsonify({
             "status": "ok",
             "message": "Vui lòng vượt link",
-            "url": link4m_url,
+            "url": short_url,
             "token": session_token
         })
     except Exception as e:
