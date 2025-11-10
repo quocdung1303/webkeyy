@@ -10,6 +10,7 @@ import hashlib
 
 app = Flask(__name__)
 
+# ✅ SỬA: Đổi sang endpoint /st có antibot mạnh hơn
 LINK4M_API = "https://link4m.co/st"
 LINK4M_KEY = os.getenv("LINK4M_KEY")
 
@@ -80,6 +81,127 @@ def huong_dan():
             return f.read()
     except:
         return "huongdan.html not found"
+
+# ✅ THÊM MỚI: Route tracking để đánh dấu đã vượt link
+@app.route("/track")
+def track():
+    """Tracking khi user click vào link và hoàn thành antibot"""
+    token = request.args.get("t")
+    
+    if not token:
+        return """
+        <script>window.location.href='/';</script>
+        <p>Đang chuyển hướng...</p>
+        """
+    
+    data = load_data()
+    
+    if token in data.get("sessions", {}):
+        # Đánh dấu đã vượt link thành công
+        data["sessions"][token]["link_clicked"] = True
+        data["sessions"][token]["link_clicked_at"] = time.time()
+        save_data(data)
+    
+    # Redirect về trang chủ với thông báo thành công
+    return """
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Xác thực thành công - ARES</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: 'Segoe UI', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                text-align: center;
+                padding: 20px;
+            }
+            .card {
+                background: rgba(255,255,255,0.1);
+                backdrop-filter: blur(10px);
+                padding: 50px 40px;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                max-width: 500px;
+                width: 100%;
+            }
+            .icon { font-size: 80px; margin-bottom: 20px; animation: bounce 1s ease infinite; }
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+            h1 { font-size: 32px; margin-bottom: 15px; font-weight: 900; }
+            p { font-size: 18px; opacity: 0.9; margin-bottom: 30px; line-height: 1.6; }
+            .countdown { 
+                font-size: 64px; 
+                font-weight: 900; 
+                color: #00ff9d;
+                margin: 30px 0;
+                text-shadow: 0 0 20px rgba(0,255,157,0.5);
+            }
+            .info {
+                background: rgba(0,0,0,0.2);
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 25px;
+                font-size: 14px;
+            }
+            .btn {
+                display: inline-block;
+                padding: 15px 40px;
+                background: white;
+                color: #667eea;
+                text-decoration: none;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 16px;
+                transition: all 0.3s;
+            }
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px rgba(255,255,255,0.3);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="icon">✅</div>
+            <h1>Xác thực thành công!</h1>
+            <p>Bạn đã vượt link thành công. Vui lòng đợi để nhận KEY.</p>
+            
+            <div class="info">
+                ⏰ Thời gian còn lại
+            </div>
+            
+            <div class="countdown" id="countdown">80</div>
+            
+            <a href="/" class="btn">Quay lại trang chủ</a>
+        </div>
+        <script>
+            let seconds = 80;
+            const countdownEl = document.getElementById('countdown');
+            
+            const timer = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    countdownEl.textContent = seconds;
+                } else {
+                    countdownEl.textContent = '✓';
+                    countdownEl.style.color = '#00ff9d';
+                    clearInterval(timer);
+                }
+            }, 1000);
+        </script>
+    </body>
+    </html>
+    """
 
 @app.route("/dashboard")
 def dashboard():
@@ -265,17 +387,18 @@ def get_stats():
 
 @app.route("/api/get_link")
 def get_link():
-    """Tạo link rút gọn Link4m"""
+    """Tạo link rút gọn Link4m với antibot"""
     if not LINK4M_KEY:
         return jsonify({"status": "error", "msg": "Chưa cấu hình LINK4M_KEY"})
     
     session_token = generate_session_token()
     unique_key = generate_key()
     
-    short_hash = hashlib.md5(session_token.encode()).hexdigest()[:8]
-    destination_url = f"https://areskey.vercel.app?s={short_hash}"
+    # ✅ SỬA: URL đích trỏ đến endpoint tracking với session token
+    destination_url = f"https://areskey.vercel.app/track?t={session_token}"
     
     try:
+        # Sử dụng endpoint /st có antibot mạnh hơn
         create_url = f"{LINK4M_API}?api={LINK4M_KEY}&url={destination_url}"
         res = requests.get(create_url, timeout=10).json()
         
@@ -284,11 +407,13 @@ def get_link():
         
         short_url = res["shortenedUrl"]
         
+        # Lưu session
         data = load_data()
         data["sessions"][session_token] = {
             "unique_key": unique_key,
             "created_at": time.time(),
             "link_clicked": False,
+            "link_clicked_at": 0,
             "ip_list": []
         }
         save_data(data)
@@ -304,7 +429,7 @@ def get_link():
 
 @app.route("/api/get_key")
 def get_key():
-    """Lấy KEY sau khi đã đợi đủ thời gian"""
+    """Lấy KEY sau khi đã vượt link và đợi đủ thời gian"""
     session_token = request.args.get("token")
     
     if not session_token:
@@ -319,14 +444,23 @@ def get_key():
     created_at = session.get("created_at", 0)
     current_time = time.time()
     
+    # Kiểm tra hết hạn (quá 24 giờ)
     if current_time - created_at > 86400:
         del data["sessions"][session_token]
         save_data(data)
         return jsonify({"status": "error", "msg": "Session đã hết hạn (quá 24 giờ)"})
     
-    time_elapsed = current_time - created_at
-    if time_elapsed < 80:
-        return jsonify({"status": "error", "msg": "Vui lòng vượt link"})
+    # ✅ SỬA: Kiểm tra đã vượt link chưa
+    if not session.get("link_clicked", False):
+        return jsonify({"status": "error", "msg": "Vui lòng vượt link trước khi lấy KEY"})
+    
+    # ✅ SỬA: Kiểm tra thời gian đã đợi (tính từ lúc vượt link xong)
+    link_clicked_at = session.get("link_clicked_at", created_at)
+    time_since_click = current_time - link_clicked_at
+    
+    if time_since_click < 80:
+        remaining = int(80 - time_since_click)
+        return jsonify({"status": "error", "msg": f"Vui lòng đợi thêm {remaining} giây"})
     
     unique_key = session.get("unique_key")
     expire_time = created_at + 86400
@@ -334,6 +468,7 @@ def get_key():
     if not unique_key:
         return jsonify({"status": "error", "msg": "Key không tồn tại"})
     
+    # Đánh dấu đã lấy key (giữ nguyên logic cũ)
     data["sessions"][session_token]["link_clicked"] = True
     save_data(data)
     
@@ -361,11 +496,13 @@ def check_key():
         if session_data.get("unique_key") == key:
             created_at = session_data.get("created_at", 0)
             
+            # Kiểm tra key đã hết hạn chưa
             if current_time - created_at > 86400:
                 del data["sessions"][session_token]
                 save_data(data)
                 return jsonify({"status": "fail", "msg": "Key đã hết hạn (quá 24 giờ)"})
             
+            # Kiểm tra giới hạn IP (tối đa 3 IP)
             ip_list = session_data.get("ip_list", [])
             max_ips = 3
             
@@ -387,3 +524,6 @@ def check_key():
             })
     
     return jsonify({"status": "fail", "msg": "Key không tồn tại hoặc không hợp lệ"})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
