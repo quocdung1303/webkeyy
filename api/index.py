@@ -10,7 +10,7 @@ import hashlib
 
 app = Flask(__name__)
 
-LINK4M_API = "https://link4m.co/st?api=6906d12068643654b40df4e9&url=yourdestinationlink.com"
+LINK4M_API = "https://link4m.co/api-shorten/v2"
 LINK4M_KEY = os.getenv("LINK4M_KEY")
 
 KEY_FILE = "/tmp/key.json"
