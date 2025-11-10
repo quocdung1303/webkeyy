@@ -3,3 +3,14 @@
     { "source": "/(.*)", "destination": "/api/index" }
   ]
 }
+{
+  "version": 2,
+  "builds": [],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "status": 503,
+      "dest": "/503.html"
+    }
+  ]
+}
