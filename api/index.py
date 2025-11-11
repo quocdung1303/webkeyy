@@ -19,7 +19,7 @@ def home():
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    font-family: 'Segoe UI', sans-serif;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                     display: flex;
@@ -56,21 +56,6 @@ def home():
                     font-size: 18px;
                     line-height: 1.8;
                 }
-                .section {
-                    margin-bottom: 30px;
-                    padding: 20px;
-                    background: rgba(102, 126, 234, 0.05);
-                    border-radius: 10px;
-                    border-left: 4px solid #667eea;
-                }
-                .section h2 {
-                    color: #667eea;
-                    font-size: 24px;
-                    margin-bottom: 15px;
-                }
-                .section p {
-                    margin-bottom: 10px;
-                }
                 .footer {
                     text-align: center;
                     margin-top: 40px;
@@ -85,40 +70,11 @@ def home():
             <div class="container">
                 <div class="logo">ARES</div>
                 <h1>📖 Hướng dẫn sử dụng ARES Tool</h1>
-                
                 <div class="content">
-                    <div class="section">
-                        <h2>🎯 Giới thiệu</h2>
-                        <p>ARES Tool là công cụ hỗ trợ người dùng tạo và quản lý key miễn phí với hệ thống bảo mật đa lớp.</p>
-                    </div>
-                    
-                    <div class="section">
-                        <h2>⚙️ Tính năng chính</h2>
-                        <p>✅ Tạo key ngẫu nhiên an toàn</p>
-                        <p>✅ Giới hạn 3 IP mỗi key</p>
-                        <p>✅ Thời gian sử dụng: 24 giờ</p>
-                        <p>✅ Hệ thống antibot bảo vệ</p>
-                    </div>
-                    
-                    <div class="section">
-                        <h2>📝 Hướng dẫn sử dụng</h2>
-                        <p><strong>Bước 1:</strong> Click nút "Bắt đầu lấy key"</p>
-                        <p><strong>Bước 2:</strong> Vượt link xác minh</p>
-                        <p><strong>Bước 3:</strong> Đợi 80 giây</p>
-                        <p><strong>Bước 4:</strong> Nhận key và sử dụng</p>
-                    </div>
-                    
-                    <div class="section">
-                        <h2>⚠️ Lưu ý quan trọng</h2>
-                        <p>• Mỗi key chỉ sử dụng được trên tối đa 3 thiết bị</p>
-                        <p>• Key hết hạn sau 24 giờ kể từ khi tạo</p>
-                        <p>• Không chia sẻ key cho người khác để tránh vượt giới hạn IP</p>
-                    </div>
+                    <p>Trang hướng dẫn đang được cập nhật...</p>
                 </div>
-                
                 <div class="footer">
-                    <p>© 2025 ARES Tool - Phiên bản V27</p>
-                    <p>Mọi thắc mắc vui lòng liên hệ qua Telegram</p>
+                    <p>© 2025 ARES Tool V27</p>
                 </div>
             </div>
         </body>
