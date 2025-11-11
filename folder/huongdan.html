@@ -108,31 +108,6 @@
             padding: 20px;
         }
 
-        .key-btn-container {
-            text-align: center;
-            margin: 30px 0;
-        }
-
-        .key-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 18px 40px;
-            background: linear-gradient(135deg, #00ff9d 0%, #00b48c 100%);
-            color: #0a0e1a;
-            text-decoration: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 700;
-            transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(0, 255, 157, 0.3);
-        }
-
-        .key-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 30px rgba(0, 255, 157, 0.5);
-        }
-
         .section {
             background: linear-gradient(135deg, rgba(0, 255, 157, 0.05) 0%, rgba(0, 180, 140, 0.05) 100%);
             border: 2px solid rgba(0, 255, 157, 0.2);
@@ -298,13 +273,6 @@
         </div>
     </div>
 
-    <div class="key-btn-container">
-        <a href="/" class="key-btn">
-            <span>🔑</span>
-            <span>LẤY KEY MIỄN PHÍ</span>
-        </a>
-    </div>
-
     <div class="container">
         <div class="section">
             <h2 class="section-title">
@@ -358,6 +326,7 @@
                 <button class="copy-btn" onclick="copyCode(this, 'pip install requests beautifulsoup4 colorama websocket-client pysocks')">Copy</button>
                 <pre>pip install requests beautifulsoup4 colorama websocket-client pysocks</pre>
             </div>
+        </div>
 
         <div class="section">
             <h2 class="section-title">
@@ -390,7 +359,7 @@
             <div class="warning-box">
                 <div class="warning-icon">🔑</div>
                 <div class="warning-text">
-                    Tool sẽ yêu cầu nhập key. Lấy key miễn phí tại <a href="/" style="color: #00ff9d;">https://areskey.vercel.app</a>
+                    Tool sẽ yêu cầu nhập key. Liên hệ admin để mua key VIP.
                 </div>
             </div>
         </div>
@@ -398,6 +367,45 @@
         <div class="section">
             <h2 class="section-title">
                 <span class="step-number">6</span>
+                Cập nhật tool lên phiên bản mới
+            </h2>
+            
+            <p class="section-text">
+                Khi có phiên bản mới, bạn có thể cập nhật tool bằng một trong các cách sau:
+            </p>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">⚡ Cách 1: Tải file mới nhất (Đơn giản - Khuyên dùng):</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py')">Copy</button>
+                <pre>curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py</pre>
+            </div>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">🔄 Cách 2: Cập nhật qua Git (Nếu đã clone từ trước):</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'cd arestool\ngit pull')">Copy</button>
+                <pre>cd arestool
+git pull</pre>
+            </div>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">🆕 Cách 3: Xóa và cài lại:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'rm -rf arestool\ngit clone https://github.com/quocdung1303/arestool.git\ncd arestool')">Copy</button>
+                <pre>rm -rf arestool
+git clone https://github.com/quocdung1303/arestool.git
+cd arestool</pre>
+            </div>
+
+            <div class="warning-box">
+                <div class="warning-icon">💡</div>
+                <div class="warning-text">
+                    <strong>Lưu ý:</strong> Nên dùng <strong>Cách 1</strong> (curl) vì đơn giản và nhanh nhất! Chỉ cần 1 dòng lệnh.
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">7</span>
                 Lỗi thường gặp
             </h2>
 
@@ -421,17 +429,10 @@
                 </div>
             </div>
         </div>
-
-        <div class="key-btn-container">
-            <a href="/" class="key-btn">
-                <span>🔑</span>
-                <span>LẤY KEY MIỄN PHÍ NGAY</span>
-            </a>
-        </div>
     </div>
 
     <div class="footer">
-        <p>© 2025 ARES Tool V27 - Hệ thống key miễn phí 24h</p>
+        <p>© 2025 ARES Tool V27 - Hướng dẫn sử dụng chi tiết</p>
     </div>
 
     <script>
@@ -447,4 +448,4 @@
         }
     </script>
 </body>
-  </html>
+            </html>
