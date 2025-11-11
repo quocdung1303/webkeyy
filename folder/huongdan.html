@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: #e0e0e0;
             line-height: 1.6;
@@ -193,6 +193,23 @@
             font-weight: 600;
         }
 
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #00ff9d;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #00d97e;
+            transform: translateX(-5px);
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -214,6 +231,8 @@
 </head>
 <body>
     <div class="container">
+        <a href="/" class="back-btn">← Quay lại trang chủ</a>
+        
         <h1>🚀 Hướng dẫn cài đặt ARES Tool</h1>
         <p class="subtitle">Cài đặt và chạy ARES Tool trên Android bằng Termux</p>
 
@@ -342,13 +361,6 @@
             <p class="section-text" style="margin-top: 15px;">
                 Nếu mọi thứ đều đúng, tool sẽ bắt đầu chạy.
             </p>
-
-            <div class="warning-box">
-                <div class="warning-icon">🔑</div>
-                <div class="warning-text">
-                    <strong>Quan trọng:</strong> Tool yêu cầu key để sử dụng. Vui lòng liên hệ admin để mua key VIP.
-                </div>
-            </div>
         </div>
 
         <!-- SECTION 6 -->
@@ -402,17 +414,6 @@
                     <strong>Cách khắc phục:</strong> Cấp quyền thực thi cho file bằng lệnh trên.
                 </div>
             </div>
-
-            <!-- LỖI 4 -->
-            <div class="error-box">
-                <div class="error-title">Lỗi 4: Invalid key / Key expired</div>
-                <div class="error-text">
-                    Key không hợp lệ hoặc đã hết hạn.
-                </div>
-                <div class="error-text">
-                    <strong>Cách khắc phục:</strong> Liên hệ admin để gia hạn hoặc mua key mới.
-                </div>
-            </div>
         </div>
 
         <!-- SECTION 7 -->
@@ -424,8 +425,7 @@
             <ul>
                 <li>Luôn cập nhật Termux và Python lên phiên bản mới nhất.</li>
                 <li>Khi có phiên bản tool mới, chỉ cần tải lại file bằng lệnh curl ở bước 4.</li>
-                <li>Không chia sẻ key cho người khác để tránh bị khóa.</li>
-                <li>Nếu gặp lỗi không có trong danh sách, vui lòng liên hệ admin.</li>
+                <li>Nếu gặp lỗi không có trong danh sách, vui lòng báo lỗi để được hỗ trợ.</li>
             </ul>
         </div>
 
@@ -457,4 +457,4 @@
         }
     </script>
 </body>
-                    </html>
+    </html>
