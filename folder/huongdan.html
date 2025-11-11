@@ -249,6 +249,25 @@
             color: #ffc107;
             font-size: 14px;
         }
+
+        .download-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #00ff9d 0%, #00b48c 100%);
+            color: #0a0e1a;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            margin: 15px 0;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 255, 157, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 255, 157, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -334,16 +353,39 @@
                 Tải tool ARES
             </h2>
 
-            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">1. Cài đặt curl:</p>
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'pkg install curl')">Copy</button>
-                <pre>pkg install curl</pre>
+            <p class="section-text">
+                Bấm vào nút bên dưới để tải file tool từ MediaFire:
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="https://www.mediafire.com/file/wms4yn4uq5sf5zr/toolares.py/file" target="_blank" class="download-btn">
+                    📥 TẢI FILE TOOL TỪ MEDIAFIRE
+                </a>
             </div>
 
-            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">2. Tải file tool:</p>
+            <div class="warning-box">
+                <div class="warning-icon">💡</div>
+                <div class="warning-text">
+                    <strong>Hướng dẫn:</strong> Sau khi tải xong, file <code>toolares.py</code> sẽ được lưu trong thư mục <strong>Download</strong> của điện thoại.
+                </div>
+            </div>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 30px; margin-bottom: 10px;">📌 Cấp quyền truy cập bộ nhớ cho Termux:</p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py')">Copy</button>
-                <pre>curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py</pre>
+                <button class="copy-btn" onclick="copyCode(this, 'termux-setup-storage')">Copy</button>
+                <pre>termux-setup-storage</pre>
+            </div>
+            <div class="warning-box">
+                <div class="warning-icon">⚠</div>
+                <div class="warning-text">
+                    Sau khi chạy lệnh trên, bấm <strong>"Cho phép"</strong> khi Termux yêu cầu quyền truy cập bộ nhớ.
+                </div>
+            </div>
+
+            <p style="color: #00ff9d; font-weight: 600; margin-top: 30px; margin-bottom: 10px;">📂 Vào thư mục Download:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'cd /sdcard/Download')">Copy</button>
+                <pre>cd /sdcard/Download</pre>
             </div>
         </div>
 
@@ -352,80 +394,67 @@
                 <span class="step-number">5</span>
                 Chạy tool
             </h2>
+            
+            <p class="section-text">
+                Sau khi đã vào thư mục Download, chạy lệnh sau để khởi động tool:
+            </p>
+            
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this, 'python toolares.py')">Copy</button>
                 <pre>python toolares.py</pre>
             </div>
+            
             <div class="warning-box">
                 <div class="warning-icon">🔑</div>
                 <div class="warning-text">
                     Tool sẽ yêu cầu nhập key. Liên hệ admin để mua key VIP.
                 </div>
             </div>
+
+            <p style="color: #ffc107; font-weight: 600; margin-top: 30px; margin-bottom: 10px;">🎯 Tóm tắt các lệnh:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'termux-setup-storage\ncd /sdcard/Download\npython toolares.py')">Copy</button>
+                <pre>termux-setup-storage
+cd /sdcard/Download
+python toolares.py</pre>
+            </div>
         </div>
 
         <div class="section">
             <h2 class="section-title">
                 <span class="step-number">6</span>
-                Cập nhật tool lên phiên bản mới
-            </h2>
-            
-            <p class="section-text">
-                Khi có phiên bản mới, bạn có thể cập nhật tool bằng một trong các cách sau:
-            </p>
-
-            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">⚡ Cách 1: Tải file mới nhất (Đơn giản - Khuyên dùng):</p>
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py')">Copy</button>
-                <pre>curl -o toolares.py https://raw.githubusercontent.com/quocdung1303/arestool/main/toolares.py</pre>
-            </div>
-
-            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">🔄 Cách 2: Cập nhật qua Git (Nếu đã clone từ trước):</p>
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'cd arestool\ngit pull')">Copy</button>
-                <pre>cd arestool
-git pull</pre>
-            </div>
-
-            <p style="color: #00ff9d; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">🆕 Cách 3: Xóa và cài lại:</p>
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this, 'rm -rf arestool\ngit clone https://github.com/quocdung1303/arestool.git\ncd arestool')">Copy</button>
-                <pre>rm -rf arestool
-git clone https://github.com/quocdung1303/arestool.git
-cd arestool</pre>
-            </div>
-
-            <div class="warning-box">
-                <div class="warning-icon">💡</div>
-                <div class="warning-text">
-                    <strong>Lưu ý:</strong> Nên dùng <strong>Cách 1</strong> (curl) vì đơn giản và nhanh nhất! Chỉ cần 1 dòng lệnh.
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2 class="section-title">
-                <span class="step-number">7</span>
                 Lỗi thường gặp
             </h2>
 
             <div class="error-box">
-                <div class="error-title">Lỗi 1: command not found: curl</div>
-                <div class="error-text">Lỗi này xảy ra khi gói 'curl' chưa được cài đặt.</div>
+                <div class="error-title">Lỗi 1: Permission denied khi vào thư mục Download</div>
+                <div class="error-text">Termux chưa có quyền truy cập bộ nhớ.</div>
                 <div class="solution">Cách khắc phục:</div>
                 <div class="code-block">
-                    <button class="copy-btn" onclick="copyCode(this, 'pkg install curl')">Copy</button>
-                    <pre>pkg install curl</pre>
+                    <button class="copy-btn" onclick="copyCode(this, 'termux-setup-storage')">Copy</button>
+                    <pre>termux-setup-storage</pre>
+                </div>
+                <div class="error-text">Sau đó bấm "Cho phép" và chạy lại lệnh <code>cd /sdcard/Download</code></div>
+            </div>
+
+            <div class="error-box">
+                <div class="error-title">Lỗi 2: No such file or directory: toolares.py</div>
+                <div class="error-text">File toolares.py không có trong thư mục Download.</div>
+                <div class="solution">Cách khắc phục:</div>
+                <div class="error-text">
+                    • Kiểm tra lại file đã tải về chưa<br>
+                    • Đảm bảo file có tên đúng: <code>toolares.py</code><br>
+                    • Kiểm tra file có trong <strong>/sdcard/Download</strong> không
                 </div>
             </div>
 
             <div class="error-box">
-                <div class="error-title">Lỗi 2: No module named 'requests'</div>
+                <div class="error-title">Lỗi 3: No module named 'requests'</div>
                 <div class="error-text">Thiếu thư viện Python.</div>
                 <div class="solution">Cách khắc phục:</div>
                 <div class="code-block">
-                    <button class="copy-btn" onclick="copyCode(this, 'pip install requests beautifulsoup4 colorama')">Copy</button>
-                    <pre>pip install requests beautifulsoup4 colorama</pre>
+                    <button class="copy-btn" onclick="copyCode(this, 'pip install requests beautifulsoup4 colorama websocket-client pysocks')">Copy</button>
+                    <pre>pip install requests beautifulsoup4 colorama websocket-client pysocks</pre>
                 </div>
             </div>
         </div>
@@ -448,4 +477,4 @@ cd arestool</pre>
         }
     </script>
 </body>
-            </html>
+                    </html>
